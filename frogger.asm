@@ -19,12 +19,17 @@
 
 	
 .text
+#########	  variables  	        ##########
+#s0: position of frog
+#s1: array of position of cars
+#s2: array of position of woods
+
 #########	Start of program	##########
 gameStart:
 	lw $t0, displayAddress # $t0 stores the base address for display
 	jal graphGameBoard # call grpah game board function
 	
-	la $t7, 3636($t0) # load the initial offset of frog in t7
+	la $s0, 3636($t0) # load the initial offset of frog in s0
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
 	
@@ -103,7 +108,7 @@ endGraphSmallTranglesLoop:
  	
 whileInRange:  # WHile looping if frog don't hit the finish line
 	la $t6, 128($t0) # load end condition to stop while loop
-	blt $t7, $t6, exitWhileInRange  # exit while loop if t7 (offset of frog) < 128 --> frog have reach other side
+	blt $s0, $t6, exitWhileInRange  # exit while loop if s0 (offset of frog) < 128 --> frog have reach other side
 	lw $t3, 0xffff0000
 	beq $t3, 1, checkW
 	j whileInRange
@@ -114,7 +119,7 @@ checkW:
 
 respondToW:
  	jal graphGameBoard
-	addi $t7, $t7, -128  # up 1 unit
+	addi $s0, $s0, -128  # up 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
 	j whileInRange
@@ -126,7 +131,7 @@ checkA:
 
 respondToA:
  	jal graphGameBoard
-	addi $t7, $t7, -4  # left 1 unit
+	addi $s0, $s0, -4  # left 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
 	j whileInRange
@@ -141,7 +146,7 @@ respondToS:
  	jal graphGameBoard
 	
 	
-	addi $t7, $t7, 128  # down 1 unit
+	addi $s0, $s0, 128  # down 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
 	j whileInRange
@@ -154,7 +159,7 @@ respondToD:
  	jal graphGameBoard
 
 	
-	addi $t7, $t7, +4  # right 1 unit
+	addi $s0, $s0, +4  # right 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
 	j whileInRange
@@ -190,25 +195,25 @@ endGraphLoop:
 	jr $ra
 
 graphFrog:
-# Graph a frog given t7 = initial offset top left corner
-	sw $t8, 0($t7) 
-	addi $t7, $t7, 8
-	sw $t8, 0($t7)
-	addi $t7, $t7, 120
-	sw $t8, 0($t7)
-	addi $t7, $t7, 4
-	sw $t8, 0($t7)
-	addi $t7, $t7, 4
-	sw $t8, 0($t7)
-	addi $t7, $t7, 124
-	sw $t8, 0($t7)
-	addi $t7, $t7, 124
-	sw $t8, 0($t7)
-	addi $t7, $t7, 4
-	sw $t8, 0($t7)
-	addi $t7, $t7, 4
-	sw $t8, 0($t7)
-	addi $t7, $t7, -392 # conpensate iteration of t7
+# Graph a frog given s0 = initial offset top left corner
+	sw $t8, 0($s0) 
+	addi $s0, $s0, 8
+	sw $t8, 0($s0)
+	addi $s0, $s0, 120
+	sw $t8, 0($s0)
+	addi $s0, $s0, 4
+	sw $t8, 0($s0)
+	addi $s0, $s0, 4
+	sw $t8, 0($s0)
+	addi $s0, $s0, 124
+	sw $t8, 0($s0)
+	addi $s0, $s0, 124
+	sw $t8, 0($s0)
+	addi $s0, $s0, 4
+	sw $t8, 0($s0)
+	addi $s0, $s0, 4
+	sw $t8, 0($s0)
+	addi $s0, $s0, -392 # conpensate iteration of s0
 	jr $ra
 	
 graphGameBoard:
@@ -235,16 +240,16 @@ graphGameBoard:
 	jr $ra
 	
 graphDeadRespawnAnima:
-# graph the dead animation, given t7 = offset of frog
+# graph the dead animation, given s0 = offset of frog
 	lw $t9, white
-	sw $t9, -8($t7)
-	sw $t9, 116($t7)
-	sw $t9, 244($t7)
-	sw $t9, 376($t7)
-	sw $t9, 16($t7)
-	sw $t9, 148($t7)
-	sw $t9, 276($t7)
-	sw $t9, 400($t7)
+	sw $t9, -8($s0)
+	sw $t9, 116($s0)
+	sw $t9, 244($s0)
+	sw $t9, 376($s0)
+	sw $t9, 16($s0)
+	sw $t9, 148($s0)
+	sw $t9, 276($s0)
+	sw $t9, 400($s0)
 	jr $ra
 	
 graphSmallRectangle:
