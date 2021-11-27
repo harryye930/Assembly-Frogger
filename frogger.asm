@@ -11,8 +11,7 @@
 	roadBlack: .word 0x464848
 	frogGreen: .word 0x02ff00
 	white: .word 0xffffff
-	carRow: .space 6
-	logSize: .space 24
+	carArray: .space 12
 	
 
 	
@@ -40,7 +39,6 @@ whileInRange:  # WHile looping if frog don't hit the finish line
 
 	lw $t3, 0xffff0000
 	beq $t3, 1, checkW
-	
 	j whileInRange
 checkW:
 	lw $t4, 0xffff0004
@@ -49,7 +47,8 @@ checkW:
 
 respondToW:
  	jal graphGameBoard
-	
+	la $t1, 2304($t0)
+	jal graphSmallRectangle
 	addi $t7, $t7, -128  # up 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
@@ -117,11 +116,11 @@ exitWhileInRange:
 
 
 graphRectangle: 
-# graph a triangle given t7 = start offset, t8 = end offset, t9 = colour
+# graph a triangle given t1 = start offset, t8 = end offset, t9 = colour
 graphLoop:   
-	beq $t1, $t8, endGraphLoop # if t7 == t8 end loop
+	beq $t1, $t8, endGraphLoop # if t1 == t8 end loop
 	sw $t9, 0($t1) # graph with colour t9
-	addi $t1, $t1, 4 # t7 = t7+1
+	addi $t1, $t1, 4 # t1 = t1+1
 	j graphLoop
 endGraphLoop:
 	jr $ra
@@ -150,7 +149,7 @@ graphFrog:
 	
 graphGameBoard:
 	addi $sp, $sp, -4
-	sw $ra, 0($sp)
+	sw $ra, 0($sp)  # decrement and backup current program counter
 	la $t1, 0($t0)
 	la $t8, 768($t0) # finish line green before 768 offset
 	lw $t9, grassGreen # load grassGreen
@@ -167,8 +166,8 @@ graphGameBoard:
 	la $t8, 4096($t0) # start line green before 4096 offset
 	lw $t9, grassGreen # load grassGreen
 	jal graphRectangle
-	lw $ra, 0($sp)
-	addi $sp, $sp, 4
+	lw $ra, 0($sp) 
+	addi $sp, $sp, 4  # restore and increment program counter
 	jr $ra
 	
 graphDeadRespawnAnima:
@@ -182,6 +181,25 @@ graphDeadRespawnAnima:
 	sw $t9, 276($t7)
 	sw $t9, 400($t7)
 	jr $ra
+	
+graphSmallRectangle:
+# graph smaller rectanges for woods and car, t1 = start offset,  t9 = color
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)  # decrement and backup current program counter
+	addi, $t2, $t1, 512  # t8 = t1 + 4rows is end offset
+graphSmallRectangleLoop:
+	beq $t1, $t2, endGraphSmallRectangleLoop  # exit loop if t1 == t8
+	addi $t8, $t1, 24  # t8 = end offset
+	lw $t9, carRed 
+	jal graphRectangle # graph single row
+	addi $t1, $t1, 104  # move t1 to the beginning of next line
+	j graphSmallRectangleLoop
+
+endGraphSmallRectangleLoop:	
+	lw $ra, 0($sp) 
+	addi $sp, $sp, 4  # restore and increment program counter
+	jr $ra
+
 	
 	
 	
