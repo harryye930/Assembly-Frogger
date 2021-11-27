@@ -34,7 +34,7 @@ gameStart:
 	sw $t3, ($s1)  # s1[0] = first small rectangle start offset
 	
 	addi $s1, $s1, 4
-	la $t3, 2404($t0)
+	la $t3, 2400($t0)
 	sw $t3, ($s1)  #s1[1] = second small rectangle start offset
 	
 	addi $s1, $s1, 4
@@ -47,37 +47,39 @@ gameStart:
 	add $t4, $zero, $zero  # loop initial value
 	addi $t5, $zero, 3  # loop size
 	lw $t9, carRed  # car color to t9
+	la $t6, ($s1)
 	jal graphCarsAndWoods
 	
 	### add initial woods in s2 ###
 	la $s2, woodArray  # load location of carArray to s1
 	la $t3, 768($t0) 
-	sw $t3, ($s1)  # s2[0] = first small rectangle start offset
+	sw $t3, ($s2)  # s2[0] = first small rectangle start offset
 	
-	addi $s1, $s1, 4
+	addi $s2, $s2, 4
 	la $t3, 816($t0)
-	sw $t3, ($s1)  #s2[1] = second small rectangle start offset
+	sw $t3, ($s2)  #s2[1] = second small rectangle start offset
 	
-	addi $s1, $s1, 4
+	addi $s2, $s2, 4
 	la $t3, 864($t0)  
-	sw $t3, ($s1)  #s2[2] = second small rectangle start offset
+	sw $t3, ($s2)  #s2[2] = second small rectangle start offset
 	
-	addi $s1, $s1, 4
+	addi $s2, $s2, 4
 	la $t3, 1304($t0)  
-	sw $t3, ($s1)  #s2[3] = second small rectangle start offset
+	sw $t3, ($s2)  #s2[3] = second small rectangle start offset
 	
-	addi $s1, $s1, 4
+	addi $s2, $s2, 4
 	la $t3, 1352($t0)  
-	sw $t3, ($s1)  #s2[4] = second small rectangle start offset
+	sw $t3, ($s2)  #s2[4] = second small rectangle start offset
 	
 	
 	
-	addi $s2, $s2, -16  # reset counter for s1
+	addi $s2, $s2, -16  # reset counter
 	### finish add cars in s2 ###
 	
 	add $t4, $zero, $zero  # loop initial value
-	addi $t5, $zero, 3  # loop size
-	lw $t9, carRed  # car color to t9
+	addi $t5, $zero, 5  # loop size
+	lw $t9, woodBrown  # wood color to t9
+	la $t6, ($s2)
 	jal graphCarsAndWoods
 	
 	
@@ -253,7 +255,6 @@ graphSmallRectangle:
 graphSmallRectangleLoop:
 	beq $t1, $t2, endGraphSmallRectangleLoop  # exit loop if t1 == t8
 	addi $t8, $t1, 24  # t8 = end offset
-	lw $t9, carRed 
 	jal graphRectangle # graph single row
 	addi $t1, $t1, 104  # move t1 to the beginning of next line
 	j graphSmallRectangleLoop
@@ -265,17 +266,17 @@ endGraphSmallRectangleLoop:
 	
 	
 graphCarsAndWoods:
-# graph multiple occation of small rectangles, s1(car)/s2(wood) = array of start address, t9 = color
+# graph multiple occation of small rectangles, t6 = s1(car)/s2(wood) = array of start address, t9 = color
 
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)  # decrement and backup current program counter
 graphCarsAndWoodsLoop:
 	beq $t4, $t5, endCarsAndWoodsLoop  # check for array end
-	lw $t1, ($s1)  # t3 is the start address for car
+	lw $t1, ($t6)  # t3 is the start address for car
 	#sw $t9, ($t3)
 	jal graphSmallRectangle
 	addi    $t4, $t4, 1  # advance loop counter
-	addi    $s1, $s1, 4  # advance array pointer
+	addi    $t6, $t6, 4  # advance array pointer
 	j       graphCarsAndWoodsLoop  # repeat the loop
 	
 endCarsAndWoodsLoop:
