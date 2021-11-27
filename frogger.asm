@@ -12,6 +12,7 @@
 	frogGreen: .word 0x02ff00
 	white: .word 0xffffff
 	carArray: .space 12
+	woodArray: .space 20
 	
 
 	
@@ -27,6 +28,72 @@ gameStart:
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
 	
+	### add initial cars in s1 ###
+	la $s1, carArray  # load location of carArray to s1
+	la $t3, 2304($t0) 
+	sw $t3, ($s1)  # s1[0] = first small rectangle start offset
+	
+	addi $s1, $s1, 4
+	la $t3, 2404($t0)
+	sw $t3, ($s1)  #s1[1] = second small rectangle start offset
+	
+	addi $s1, $s1, 4
+	la $t3, 2864($t0)  
+	sw $t3, ($s1)  #s1[2] = second small rectangle start offset
+	
+	addi $s1, $s1, -8  # reset counter for s1
+	### finish add cars in s1 ###
+	
+	add $t4, $zero, $zero  # loop initial value
+	addi $t5, $zero, 3  # loop size
+	lw $t9, carRed  # car color to t9
+	jal graphCarsAndWoods
+	
+	### add initial woods in s2 ###
+	la $s2, woodArray  # load location of carArray to s1
+	la $t3, 768($t0) 
+	sw $t3, ($s1)  # s2[0] = first small rectangle start offset
+	
+	addi $s1, $s1, 4
+	la $t3, 816($t0)
+	sw $t3, ($s1)  #s2[1] = second small rectangle start offset
+	
+	addi $s1, $s1, 4
+	la $t3, 864($t0)  
+	sw $t3, ($s1)  #s2[2] = second small rectangle start offset
+	
+	addi $s1, $s1, 4
+	la $t3, 1304($t0)  
+	sw $t3, ($s1)  #s2[3] = second small rectangle start offset
+	
+	addi $s1, $s1, 4
+	la $t3, 1352($t0)  
+	sw $t3, ($s1)  #s2[4] = second small rectangle start offset
+	
+	
+	
+	addi $s2, $s2, -16  # reset counter for s1
+	### finish add cars in s2 ###
+	
+	add $t4, $zero, $zero  # loop initial value
+	addi $t5, $zero, 3  # loop size
+	lw $t9, carRed  # car color to t9
+	jal graphCarsAndWoods
+	
+	
+	
+	
+	
+graphSmallRectanglesLoop:
+	bge $t1, $t2, endGraphSmallTranglesLoop
+	sll $t2, $t1, 2
+	add $t3, $s1, $t2
+	sw $t9, ($t3)
+	addi $t1, $t1, 1
+	
+	
+endGraphSmallTranglesLoop:
+		
 	li $v0, 32
  	li $a0, 1000
  	syscall
@@ -35,8 +102,6 @@ gameStart:
 whileInRange:  # WHile looping if frog don't hit the finish line
 	la $t6, 128($t0) # load end condition to stop while loop
 	blt $t7, $t6, exitWhileInRange  # exit while loop if t7 (offset of frog) < 128 --> frog have reach other side
-	#bge $t7, $t6, checkUserInput # check user input if not reached other side
-
 	lw $t3, 0xffff0000
 	beq $t3, 1, checkW
 	j whileInRange
@@ -47,8 +112,6 @@ checkW:
 
 respondToW:
  	jal graphGameBoard
-	la $t1, 2304($t0)
-	jal graphSmallRectangle
 	addi $t7, $t7, -128  # up 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
@@ -61,7 +124,6 @@ checkA:
 
 respondToA:
  	jal graphGameBoard
-	
 	addi $t7, $t7, -4  # left 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
@@ -97,12 +159,12 @@ respondToD:
 	
 	
 exitWhileInRange:
-	jal graphDeadRespawnAnima
+	jal graphDeadRespawnAnima  # show dead halo
 	li $v0, 32
  	li $a0, 2000
  	syscall
  	
- 	j gameStart
+ 	j gameStart # restart the game
 	
 	li $v0, 10 # terminate the program gracefully
  	syscall
@@ -171,6 +233,7 @@ graphGameBoard:
 	jr $ra
 	
 graphDeadRespawnAnima:
+# graph the dead animation, given t7 = offset of frog
 	lw $t9, white
 	sw $t9, -8($t7)
 	sw $t9, 116($t7)
@@ -199,7 +262,25 @@ endGraphSmallRectangleLoop:
 	lw $ra, 0($sp) 
 	addi $sp, $sp, 4  # restore and increment program counter
 	jr $ra
-
 	
+	
+graphCarsAndWoods:
+# graph multiple occation of small rectangles, s1(car)/s2(wood) = array of start address, t9 = color
+
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)  # decrement and backup current program counter
+graphCarsAndWoodsLoop:
+	beq $t4, $t5, endCarsAndWoodsLoop  # check for array end
+	lw $t1, ($s1)  # t3 is the start address for car
+	#sw $t9, ($t3)
+	jal graphSmallRectangle
+	addi    $t4, $t4, 1  # advance loop counter
+	addi    $s1, $s1, 4  # advance array pointer
+	j       graphCarsAndWoodsLoop  # repeat the loop
+	
+endCarsAndWoodsLoop:
+	lw $ra, 0($sp) 
+	addi $sp, $sp, 4  # restore and increment program counter
+	jr $ra	
 	
 	
