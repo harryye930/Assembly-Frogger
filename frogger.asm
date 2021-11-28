@@ -91,26 +91,7 @@ gameStart:
  	syscall
 	
 	
-	
-	
-	
-	
-	
-graphSmallRectanglesLoop:
-	bge $t1, $t2, endGraphSmallTranglesLoop
-	sll $t2, $t1, 2
-	add $t3, $s1, $t2
-	sw $t9, ($t3)
-	addi $t1, $t1, 1
-	
-	
-endGraphSmallTranglesLoop:
-		
-	li $v0, 32
- 	li $a0, 1000
- 	syscall
- 	
- 	
+
 whileInRange:  # WHile looping if frog don't hit the finish line
 	la $t6, 128($t0) # load end condition to stop while loop
 	blt $s0, $t6, exitWhileInRange  # exit while loop if s0 (offset of frog) < 128 --> frog have reach other side
@@ -123,9 +104,9 @@ checkW:
 	j checkA
 
 respondToW:
- 	jal graphGameBoard
+ 	jal graphGameBoard # draw game board
  	
- 	add $t4, $zero, $zero  
+ 	add $t4, $zero, $zero  # begin move car
 	addi $t5, $zero, 3  
 	la $t6, ($s1)
 	lw $t9, carRed  
@@ -133,9 +114,9 @@ respondToW:
  	add $t4, $zero, $zero  
 	addi $t5, $zero, 3  
  	la $t6, ($s1)
-	jal graphCarsAndWoods
+	jal graphCarsAndWoods  # end move car
 	
-	add $t4, $zero, $zero  
+	add $t4, $zero, $zero  # begin move wood
 	addi $t5, $zero, 5  
 	la $t6, ($s2)
 	lw $t9, woodBrown  
@@ -143,7 +124,7 @@ respondToW:
  	add $t4, $zero, $zero  
 	addi $t5, $zero, 5  
  	la $t6, ($s2)
-	jal graphCarsAndWoods
+	jal graphCarsAndWoods  # end move wood
 	
 	addi $s0, $s0, -128  # up 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
@@ -156,19 +137,29 @@ checkA:
 	j checkS
 
 respondToA:
- 	jal graphGameBoard
+
+	jal graphGameBoard # draw game board
  	
- 	add $t4, $zero, $zero 
+ 	add $t4, $zero, $zero  # begin move car
 	addi $t5, $zero, 3  
 	la $t6, ($s1)
-	lw $t9, carRed 
+	lw $t9, carRed  
  	jal incrementCarPosition
- 	add $t4, $zero, $zero 
+ 	add $t4, $zero, $zero  
 	addi $t5, $zero, 3  
  	la $t6, ($s1)
-	jal graphCarsAndWoods
+	jal graphCarsAndWoods  # end move car
 	
-	
+	add $t4, $zero, $zero  # begin move wood
+	addi $t5, $zero, 5  
+	la $t6, ($s2)
+	lw $t9, woodBrown  
+ 	jal decrementWoodPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 5  
+ 	la $t6, ($s2)
+	jal graphCarsAndWoods  # end move wood
+ 	
 	
 	addi $s0, $s0, -4  # left 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
@@ -182,9 +173,9 @@ checkS:
 	j checkD
 
 respondToS:
- 	jal graphGameBoard
-	
- 	add $t4, $zero, $zero 
+ 	jal graphGameBoard # draw game board
+ 	
+ 	add $t4, $zero, $zero  # begin move car
 	addi $t5, $zero, 3  
 	la $t6, ($s1)
 	lw $t9, carRed  
@@ -192,7 +183,17 @@ respondToS:
  	add $t4, $zero, $zero  
 	addi $t5, $zero, 3  
  	la $t6, ($s1)
-	jal graphCarsAndWoods
+	jal graphCarsAndWoods  # end move car
+	
+	add $t4, $zero, $zero  # begin move wood
+	addi $t5, $zero, 5  
+	la $t6, ($s2)
+	lw $t9, woodBrown  
+ 	jal decrementWoodPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 5  
+ 	la $t6, ($s2)
+	jal graphCarsAndWoods  # end move wood
 	
 	addi $s0, $s0, 128  # down 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
@@ -204,17 +205,27 @@ checkD:
 	beq $t4, 0x64, respondToD
 
 respondToD:
- 	jal graphGameBoard
-
- 	add $t4, $zero, $zero  
-	addi $t5, $zero, 3 
+ 	jal graphGameBoard # draw game board
+ 	
+ 	add $t4, $zero, $zero  # begin move car
+	addi $t5, $zero, 3  
 	la $t6, ($s1)
 	lw $t9, carRed  
  	jal incrementCarPosition
  	add $t4, $zero, $zero  
 	addi $t5, $zero, 3  
  	la $t6, ($s1)
-	jal graphCarsAndWoods
+	jal graphCarsAndWoods  # end move car
+	
+	add $t4, $zero, $zero  # begin move wood
+	addi $t5, $zero, 5  
+	la $t6, ($s2)
+	lw $t9, woodBrown  
+ 	jal decrementWoodPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 5  
+ 	la $t6, ($s2)
+	jal graphCarsAndWoods  # end move wood
 	
 	addi $s0, $s0, +4  # right 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
@@ -340,7 +351,6 @@ graphCarsAndWoodsLoop:
 	addi    $t4, $t4, 1  # advance loop counter
 	addi    $t6, $t6, 4  # advance array pointer
 	j       graphCarsAndWoodsLoop  # repeat the loop
-	
 endCarsAndWoodsLoop:
 	lw $ra, 0($sp) 
 	addi $sp, $sp, 4  # restore and increment program counter
