@@ -1,6 +1,7 @@
 
 # https://minnie.tuhs.org/CompArch/Resources/mips_quick_tutorial.html#RegisterDescription
 # https://courses.cs.washington.edu/courses/cse378/00au/ctomips2.pdf
+# https://courses.cs.vt.edu/~cs2505/summer2011/Notes/pdf/T23.MIPSArrays.pdf
 .data
 	displayAddress: .word 0x10008000
 	grassGreen: .word 0x34a853
@@ -76,8 +77,6 @@ gameStart:
 	la $t3, 1352($t0)  
 	sw $t3, ($s2)  #s2[4] = second small rectangle start offset
 	
-	
-	
 	addi $s2, $s2, -16  # reset counter
 	### finish add cars in s2 ###
 	
@@ -86,6 +85,12 @@ gameStart:
 	lw $t9, woodBrown  # wood color to t9
 	la $t6, ($s2)
 	jal graphCarsAndWoods
+	
+	li $v0, 32
+ 	li $a0, 1000
+ 	syscall
+	
+	
 	
 	
 	
@@ -119,6 +124,27 @@ checkW:
 
 respondToW:
  	jal graphGameBoard
+ 	
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 3  
+	la $t6, ($s1)
+	lw $t9, carRed  
+ 	jal incrementCarPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 3  
+ 	la $t6, ($s1)
+	jal graphCarsAndWoods
+	
+	add $t4, $zero, $zero  
+	addi $t5, $zero, 5  
+	la $t6, ($s2)
+	lw $t9, woodBrown  
+ 	jal decrementWoodPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 5  
+ 	la $t6, ($s2)
+	jal graphCarsAndWoods
+	
 	addi $s0, $s0, -128  # up 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
@@ -131,6 +157,19 @@ checkA:
 
 respondToA:
  	jal graphGameBoard
+ 	
+ 	add $t4, $zero, $zero 
+	addi $t5, $zero, 3  
+	la $t6, ($s1)
+	lw $t9, carRed 
+ 	jal incrementCarPosition
+ 	add $t4, $zero, $zero 
+	addi $t5, $zero, 3  
+ 	la $t6, ($s1)
+	jal graphCarsAndWoods
+	
+	
+	
 	addi $s0, $s0, -4  # left 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
 	jal graphFrog  # use function to graph frog
@@ -145,6 +184,15 @@ checkS:
 respondToS:
  	jal graphGameBoard
 	
+ 	add $t4, $zero, $zero 
+	addi $t5, $zero, 3  
+	la $t6, ($s1)
+	lw $t9, carRed  
+ 	jal incrementCarPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 3  
+ 	la $t6, ($s1)
+	jal graphCarsAndWoods
 	
 	addi $s0, $s0, 128  # down 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
@@ -158,6 +206,15 @@ checkD:
 respondToD:
  	jal graphGameBoard
 
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 3 
+	la $t6, ($s1)
+	lw $t9, carRed  
+ 	jal incrementCarPosition
+ 	add $t4, $zero, $zero  
+	addi $t5, $zero, 3  
+ 	la $t6, ($s1)
+	jal graphCarsAndWoods
 	
 	addi $s0, $s0, +4  # right 1 unit
 	lw $t8, frogGreen # store frogGreen to t8
@@ -288,5 +345,41 @@ endCarsAndWoodsLoop:
 	lw $ra, 0($sp) 
 	addi $sp, $sp, 4  # restore and increment program counter
 	jr $ra	
+
 	
+incrementCarPosition:
+# increment car position by adding 4 to each if the position index stored in s1
 	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)  # decrement and backup current program counter
+incrementCarLoop:
+	beq $t4, $t5, endCarIncrementLoop  # check for array end
+	lw $t1, ($t6)  # t1 is the start address for car
+	addi $t1, $t1, 4  #increlemt current address by 1 to the right
+	sw $t1, ($t6)
+	addi $t4, $t4, 1  # advance loop counter
+	addi $t6, $t6, 4  # advance array pointer
+	j incrementCarLoop  # repeat the loop
+endCarIncrementLoop:
+	lw $ra, 0($sp) 
+	addi $sp, $sp, 4  # restore and increment program counter
+	jr $ra
+
+
+decrementWoodPosition:
+# increment car position by decrease 4 to each if the position index stored in s1
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)  # decrement and backup current program counter
+decrementWoodLoop:
+	beq $t4, $t5, endWoodDecrementLoop  # check for array end
+	lw $t1, ($t6)  # t1 is the start address for car
+	addi $t1, $t1, -4  #increlemt current address by 1 to the left
+	sw $t1, ($t6)
+	addi  $t4, $t4, 1  # advance loop counter
+	addi  $t6, $t6, 4  # advance array pointer
+	j decrementWoodLoop  # repeat the loop
+endWoodDecrementLoop:
+	lw $ra, 0($sp) 
+	addi $sp, $sp, 4  # restore and increment program counter
+	jr $ra
