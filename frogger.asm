@@ -48,6 +48,7 @@
 	lifeColor: .word 0xff0000
 	grassGreen: .word 0x34a853
 	middleRestPurple: .word 0x674ea7
+	white: .word 0xffffff
 	riveBlue: .word 0x4a86e8
 	roadBlack: .word 0x464848
 	frogGreen: .word 0x02ff00
@@ -109,7 +110,14 @@ resetFrogCoor: 			# Reset the coordinate of frog
 	jal drawObjs
 	jal drawFrog
 	jal drawCanvas
+	jal graphDeadRespawnAnima
+	li $v0, 32
+ 	li $a0, 1000
+ 	syscall
+	
+	
 	# End of Init
+	
 	
 gameStart:
 	
@@ -1013,6 +1021,22 @@ startGraphBeginningGrass:
 		j startGraphBeginningGrass
 stopGraphBeginningGrass:
 	jr $ra
+		
+		
+graphDeadRespawnAnima:
+# graph the dead animation, given t1 = offset of frog
+	lw $t1, displayAddress
+	la $t1, 3644($t1)
+	lw $t9, white
+	sw $t9, -8($t1)
+	sw $t9, 116($t1)
+	sw $t9, 244($t1)
+	sw $t9, 376($t1)
+	sw $t9, 20($t1)
+	sw $t9, 152($t1)
+	sw $t9, 280($t1)
+	sw $t9, 404($t1)
+	jr $ra
 	
 		
 drawFrog:
@@ -1051,6 +1075,7 @@ drawFrog:
 		j beginDrawFrog
 	endDrawFrog:
 		jr $ra
+
 		
 	
 drawRectangleByStack: # Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, Width, Height
@@ -1253,7 +1278,7 @@ sinkWood:
 	j endOfChanging
 	# Action when still floating
 	
-	changeSinkStatus:
+changeSinkStatus:
 	la $t1, sinkCount
 	sw $zero, ($t1)
 	li $t4, 1
@@ -1274,7 +1299,7 @@ sinkWood:
 	# end of hiding the wood
 	j endOfChanging
 	
-	toFloat:
+toFloat:
 	# Action to restore the second wood
 	la $t5, upperRowWoodLocation
 	lw $t6, ($sp) # t6 for the diff between first and second wood
@@ -1284,7 +1309,7 @@ sinkWood:
 	sw $t7, 8($t5) # restore
 	# End of action
 	
-	endOfChanging:
+endOfChanging:
 	jr $ra
 	
 		
