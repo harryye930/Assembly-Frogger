@@ -62,7 +62,7 @@
 	gameStatus: .word 0
 	
 	frogLocations: .word 0, 12, 128, 132, 136, 140, 260, 264, 384, 388, 392, 396
-	frogCoor: .word 15, 28  # store frog corrdinate in (x, y) format
+	frogCoordinate: .word 15, 28  # store frog corrdinate in (x, y) format
 	frogSize: .word 4, 4	# store frog size as 4*4
 	frogSpeed: .word 0
 	
@@ -96,7 +96,7 @@ main:
 	jal resetGameParam
 	
 resetFrogLocation: 			# Reset the location of frog
-	la $t1, frogCoor
+	la $t1, frogCoordinate
 	li $t2, 15
 	sw $t2, 0($t1) 
 	li $t2, 28
@@ -124,7 +124,7 @@ gameStart:
 	jal reactKey # Check the key events
 	
 	# check collision and wining status
-	jal collisionDetect
+	jal checkCollision
 	
 	# Check win status
 	lw $t1, winStatus
@@ -144,82 +144,96 @@ gameStart:
 	la $t1, endCheckingWin 
 	add $s3, $t1, $zero # s3 for return address
 	la $t1, canvas
-	add $s1, $t1, $zero # s1 for canvas
-	la $t4, frogCoor
-	lw $t0, 0($t4) # t0 ->  x address
-	lw $t1, 4($t4) # t1 ->  y address
-	addi $t2, $zero, 4 # t2 for width
-	addi $t3, $zero, 4 # t3 for height
-	lw $t9, successGreen # t9 for color
+	add $s1, $t1, $zero 	# s1 -> canvas
+	la $t4, frogCoordinate
+	lw $t0, 0($t4) 		# t0 ->  x address
+	lw $t1, 4($t4) 		# t1 ->  y address
+	addi $t2, $zero, 4	# t2 -> width
+	addi $t3, $zero, 4 	# t3 -> height
+	lw $t9, successGreen 	# t9 -> color
 
-	j drawRectangle
+	j graphRectangle
 
-	# End painting
+				# End painting
 	
 	endCheckingWin:
 	j resetFrogLocation
 skip:
-	# End of checking sin status
+				# End of checking status
 	
-	# reset the frog position if it is hit or drown
+				# reset the frog position if it is hit or drown
 	lw $t1 beenHit
-	beq $t1, $zero, noHitting
+	beq $t1, $zero, noHit
 	la $t3, beenHit
-	sw $zero, 0($t3) # Reset the hitting status
-	# Action when frog hit something
+	sw $zero, 0($t3) 	# Reset the hitting status
+	
+				# Action when frog hit wood or car
 	lw $t1, lifeRemain
-	addi $t1, $t1, -1 # Subtract 1 from the total life count
+	addi $t1, $t1, -1 	# Subtract 1 from the total life
 	la $t2 lifeRemain
 	sw $t1, ($t2)
 	beq $t1, $zero, main
 	j resetFrogLocation
 	
-noHitting: # Frog does not hit anything
+noHit: 
+# Frog does not hit anything
 	
-	# Check if the frog is on wood and react accordingly
-	jal frogOnWood
+				
+	jal frogOnWood		# Check if the frog is on woods
 	
-	lw $t1, gameStatus # is the game status is 0, freeze the canvas
+	lw $t1, gameStatus 	# is the game status is 0, freeze the canvas
 	beq $t1, $zero, sleep
 	
 	lw $t1, initialLocationObjects # Decide how fast shoud the objects be moved
 	lw $t2, nextLineSignal
-	bge $t1, $t2, moveBranch
+	bge $t1, $t2, movingAction
 	addi $t1, $t1, 1
 	la $t2, initialLocationObjects
 	sw $t1, 0($t2)
-	j current4
+	j noHitJump
 	
-	moveBranch:
+movingAction:
 	la $t1, initialLocationObjects
 	sw $zero, 0($t1)
 	jal sinkWood
 	jal moveObjsCoor
-	current4: # End of the moveing process
+noHitJump:			# End of the moving process
 	
 	jal graphGameBoard
 	jal graphFloatingObjects
 	jal graphFrog
 	jal graphCanvas
 	
-	sleep:
-	li $v0, 32
-	li $a0, 17
+sleep:
+	li $v0, 32		# 20 milisec as default "time"
+	li $a0, 20
 	syscall
-	
-	j gameStart
+	j gameStart		# Restart the game
 	
 Exit:
 	
-	li $v0, 10 # terminate the program gracefully
-
+	li $v0, 10 		# terminate the program gracefully
 	syscall
 	
 	
+	
+	
+	
+	
+	
+#########	Functions 	###########	
+
+
+
+
+
+
+	
 frogOnWood:
-	# Check is the frog is on wood, if it is, then make the frog move with the wood
-	la $t0, frogCoor # to store the address of frog location
-	lw $t0, 4($t0) # t1 to store the y location of frog
+# Check is the frog is on wood, if it is, then make the frog move with the wood
+	
+	la $t0, frogCoordinate 		# t0 store the address of frog location
+	lw $t0, 4($t0) 			# t1 to store the y location of frog
 	li $t1, 8 
 	blt $t0, $t1, noFrogOnWood1 #
 	li $t1, 12
@@ -254,40 +268,28 @@ frogOnWood:
 	
 	
 	
-	
-	
-	
-
-#########	Functions 	###########	
-	
-	
-	
-	
-	
-	
-	
-collisionDetect: 
+checkCollision: 
 # detect if the collision is happening
-# t0 -> x coord, t1 -> y coord, t9 -> color, input stack: coor1, coor2, size1, size2
-# return flag, collision in car zone and drawn in water zone
+# t0 -> xCoord, t1 -> yCoord, t9 -> color, input stack: coor1, coor2, size1, size2
+# return flag, collision in car zone and graphn water zone
 	
 		
-	la $t0, frogCoor # to store the address of frog location
-	lw $t1, 4($t0) # t1 to store the y location of frog
-	lw $t0, 0($t0) # t0 to store the x location, override the previous value
+	la $t0, frogCoordinate 		# t0 store the address of frog location
+	lw $t1, 4($t0) 			# t1 to store the y location of frog
+	lw $t0, 0($t0) 			# t0 to store the x location
 	 	
 	# First if the frog is in Car Zone
-	li $t9, 20 # The beginning row of Car Zone
-	blt $t1, $t9, aboveCarZone # frog is above the car Zone
-	li $t9, 28  # the endingt row of car zone
-	bge $t1, $t9, belowCarZone # frog is below the car Zone
+	li $t9, 20 			# The beginning row of Car Zone
+	blt $t1, $t9, aboveCarZone 	# frog is above the car Zone
+	li $t9, 28  			# the endingt row of car zone
+	bge $t1, $t9, belowCarZone 	# frog is below the car Zone
 	 	
-	# At this point, frog is in the car Zone
+	# frog is inside the car Zone
 	li $t9, 24
 	bge $t1, $t9, lowerRowCarDetect 
 	 	
-	# Action if in lower row car Zone, checked
-	la $t9, upperRowCarDetectEnd # push the parameters into the stack
+	# if hit in lower row car Zone
+	la $t9, upperRowCarDetectEnd 	# push the parameters into the stack
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
 		
@@ -299,20 +301,20 @@ collisionDetect:
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
 	 	
-	j objCollisionWithFrog
+	j hitFrog
 upperRowCarDetectEnd:
-	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+	lw $t9, 0($sp) 			# Store the hitting status into the t9 regiter
 	addi $sp, $sp, 4
-	la $t5, beenHit # Store the address of hitting Status into t5
+	la $t5, beenHit 		# Store the address of hitting Status into t5
 	sw $t9, 0($t5)
 	 	
 	j finishDetect
 	 	
-	# Action in upper car Zone
+	# If hit in upper car Zone
 lowerRowCarDetect:
 	 	
 	# Checked
-	la $t9, lowerRowCarDetectEnd # push the parameters into the stack
+	la $t9, lowerRowCarDetectEnd 	# push the address onto the stack
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
 	 	
@@ -324,148 +326,138 @@ lowerRowCarDetect:
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
 	 	
-	j objCollisionWithFrog
+	j hitFrog		# jump to hit frog section
+
 lowerRowCarDetectEnd:
-	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+	lw $t9, 0($sp) 		# Store the hitting status into the t9 regiter
 	addi $sp, $sp, 4
-	la $t5, beenHit # Store the address of hitting Status into t5
+	la $t5, beenHit 	# Store the address of hitting Status into t5
 	sw $t9, 0($t5)
 	j finishDetect
 	 	
 aboveCarZone:
-	li $t9, 8 # t9 store the starting y location of waterZone
+	li $t9, 8 		# t9 store the starting y location of water
 	blt $t1, $t9, safeZoneAction
 	 	
-	# Action when in mid Zone
+	# Action when in rest zone
 	li $t9, 16
 	beq $t1, $t9, finishDetect
 	li $t9, 12
-	beq $t1, $t9, negativeWaterDetect
+	beq $t1, $t9, lowerLogDetect
 	 	
-	# Action in positiveWater Zone
-	# Checked
-	la $t9, positiveWaterDetectEnd # push the parameters into the stack
+	# Action in upper wood zone
+	la $t9, upperLogDetectEnd # push the parameters into the stack
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
 	 	
 	addi $sp, $sp, -4
 	la $t8, upperRowWoodLocation
-	sw $t8, 0($sp) # store the address of x, y location into stack
+	sw $t8, 0($sp) 		# store the address of x, y location into stack
 	 	
 	 	
 	la $t9, woodSize
 	 	
-	# Store the address of wood width into stack
-	addi $sp, $sp, -4
+	
+	addi $sp, $sp, -4	# Store the address of wood width into stack
 	sw $t9, 0($sp)
 	 	
-	j objCollisionWithFrog
-positiveWaterDetectEnd:
+	j hitFrog
 
-	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+upperLogDetectEnd:
+	lw $t9, 0($sp) 		# Store the hitting status into t9 
 	addi $sp, $sp, 4
 	li $t8, 1
-	sub $t9, $t8, $t9 # Store the opposite vaoue into the game status
-	la $t5, beenHit # Store the address of hitting Status into t5
+	sub $t9, $t8, $t9 	# Store the opposite value into the game status
+	la $t5, beenHit 	# Store the address of hittingStatus to t5
 	sw $t9, 0($t5) 
 	j finishDetect
 	 	
-	# Action in negative water Zone
-	negativeWaterDetect:
-	la $t9, negativeWaterDetectEnd # push the parameters into the stack
+	# Action in lower wood zone
+	lowerLogDetect:
+	la $t9, lowerLogDetectEnd # push the parameters into the stack
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
 	 	
 	addi $sp, $sp, -4
 	la $t8, lowerRowWoodLocation
-	sw $t8, 0($sp) # store the address of x, y location into stack
+	sw $t8, 0($sp) 		# store the address of x, y location into stack
 	 	
 	 	
-	la $t9, woodSize	 # Wood width
-	# Store the address of wood width into stack
-	addi $sp, $sp, -4
+	la $t9, woodSize	# Wood width
+	addi $sp, $sp, -4	# Store the address of wood width into stack
 	sw $t9, 0($sp)
 	 	
-	j objCollisionWithFrog
+	j hitFrog
 	 	
-negativeWaterDetectEnd:
-	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+lowerLogDetectEnd:
+	lw $t9, 0($sp) 		# Store the hitting status in t9
 	addi $sp, $sp, 4
 	li $t8, 1
-	sub $t9, $t8, $t9 # Store the opposite vaoue into the game status
-	la $t5, beenHit # Store the address of hitting Status into t5
+	sub $t9, $t8, $t9 	# Store the opposite value into the game status
+	la $t5, beenHit 	# Store the address of hitting status in t5
 	sw $t9, 0($t5)
 	j finishDetect
 	 	
 	 	
 	 	
-safeZoneAction: # The zone that win the game, can add more features
-	# checked
+safeZoneAction: 		# WIN a round!
 	li $t9, 1
 	la $t8, winStatus
 	sw $t9, 0($t8)
 	j finishDetect
 	 	
 belowCarZone: 	
-	finishDetect:
+finishDetect:
 	jr $ra
 	 	
 	 	
-objCollisionWithFrog: # stack: return address, objCoordinate, objSize (Address)
-# register used, t2-8
-	lw $t2, 0($sp) # use t2 to store the address of object size
+hitFrog: 
+# stack: return address, corrdinate, object address
+	lw $t2, 0($sp) 		# use t2 to store the address of object size
 	addi $sp, $sp, 4
-	# lw $t3, 4($t2) # t3 store the height of the object
-	lw $t2, 0($t2) # t2 to store the width of the object
+	lw $t2, 0($t2) 		# t2 to store the width of the object
 		     
-	lw $t4, 0($sp) # 
+	lw $t4, 0($sp) 
 	addi $sp, $sp, 4
-	add $s4, $t4, $zero # Copy the value in t4 to s4, the address of 
-	# lw $t5, 4($t4) # t5 to store the y location of the object
-	lw $t4, 0($t4) # t4 to store the x location of the object
+	add $s4, $t4, $zero 	# Copy the value in t4 to s4, the address of 
+	lw $t4, 0($t4) 		# t4 to store the x location of the object
 		     
      
-	la $t6, frogCoor
-	# lw $t7, 4($t6) # t7 to store the y location of the frog
-	lw $t6, 0($t6) # t6 to store the x location of the frog
+	la $t6, frogCoordinate
+	lw $t6, 0($t6) 		# t6 to store frog.x
 		     
-	add $t8, $t4, $t2 # the x location of the right coner of the object
-	bge $t6, $t8, offCollision1
-	# Checked
-	addi $t8, $t6, 4 # t8 to store the right cooner of the frog
-	ble $t8, $t4, offCollision1
+	add $t8, $t4, $t2 	# the x location of the right corner of the object
+	bge $t6, $t8, hitCheckingA
+	addi $t8, $t6, 4 	# t8 to store the right corner of the frog
+	ble $t8, $t4, hitCheckingA
 		     
 	li $t7, 1
-	lw $t8, 0($sp) # strote the return address to the t8
-	sw $t7, 0($sp) # store the return value into the stack
+	lw $t8, 0($sp) 		# strote the return address to the t8
+	sw $t7, 0($sp) 		# store the return value into the stack
 		     
 	jr $t8
 		     
-	offCollision1:
+hitCheckingA:
 		     
-	lw $t4, 8($s4) # t4 to store x coor of the object
-	# lw $t5, 4($t4) # t5 to store the y location of the object
-		     
+	lw $t4, 8($s4) 		# t4 to store x corrdinate of the object
      
-	la $t6, frogCoor
-	# lw $t7, 4($t6) # t7 to store the y location of the frog
-	lw $t6, 0($t6) # t6 to store the x location of the frog
+	la $t6, frogCoordinate
+	lw $t6, 0($t6)		# t6 to store the frog.x
 		     
-	add $t8, $t4, $t2 # the x location of the right coner of the object
-	bge $t6, $t8, offCollision2
- # Checked
-	addi $t8, $t6, 4 # t8 to store the right cooner of the frog
-	ble $t8, $t4, offCollision2
+	add $t8, $t4, $t2 	# the x location of the right corner of the object
+	bge $t6, $t8, hitCheckingB
+	addi $t8, $t6, 4 	# t8 to store the right corner of the frog
+	ble $t8, $t4, hitCheckingB
 		     
 	li $t7, 1
-	lw $t8, 0($sp) # strote the return address to the t8
-	sw $t7, 0($sp) # store the return value into the stack	
+	lw $t8, 0($sp) 		# strote the return address to the t8
+	sw $t7, 0($sp) 		# store the return value into the stack	
 	jr $t8
 		     
-offCollision2:
+hitCheckingB:
 		     
-	lw $t8, 0($sp) # strote the return address to the t2
-	sw $zero, 0($sp) # store the return value into the stack
+	lw $t8, 0($sp) 		# strote the return address to the t2
+	sw $zero, 0($sp)	# store the return value into the stack
 	jr $t8		      
 		     
 			
@@ -474,6 +466,8 @@ offCollision2:
 	
 	
 reactKey:
+# react to keboard input --> wasd for direction, p --> start playing
+
 	lw $t8, 0xffff0000
 	beq $t8, 1, keyboardInput 	# react to key if pressed
 	j noKeyEvent
@@ -482,17 +476,17 @@ keyboardInput:
 	
 	lw $t2, 0xffff0004 		# load the key value to t2
 	
-	beq $t2, 0x70, respondToP 	# Trigger p 
+	beq $t2, 0x70, respondToP 	# trigger p 
 	lw $t6, gameStatus
 	beq $t6, $zero, noKeyEvent 	# if the game status is 0, no key event will be respond
 	j checkW
+
 respondToP:
 	li $t5, 1
 	lw $t3, gameStatus
 	la $t4, gameStatus
-	sub $t3, $t5, $t3 		# If R is pressed, change the game status, either from start to end or end to start
+	sub $t3, $t5, $t3 		# If P is pressed, change the game status, either from start to end or end to start
 	sw $t3, 0($t4)			# 1 represent start and 0 represent end
-	
 	j noKeyEvent
 
 checkW:
@@ -501,21 +495,19 @@ checkW:
 	j checkA
 
 respondToW:				# Move the frog up by 4 pixels
-	la $t3, frogCoor
-	la $t4, frogCoor
+	la $t3, frogCoordinate
+	la $t4, frogCoordinate
 	lw $t3, 4($t3)
 	addi $t3, $t3, -4
-	
 	li $t5, 0
-	blt $t3, $t5, boundTop 		# Fix the y location to 0 if it is smaller than 28
-	
-	j noBoundTop
-	boundTop:
-	add $t3, $zero, $t5
-	noBoundTop:
-	sw $t3, 4($t4)
-	
+	blt $t3, $t5, stopEarlyY 	# Fix the y location if too high
+	j noStopEarlyY
 
+stopEarlyY:
+	add $t3, $zero, $t5
+
+noStopEarlyY:
+	sw $t3, 4($t4)			# increment frog.y by 4 up
 	j noKeyEvent
 	
 	
@@ -524,20 +516,18 @@ checkA:
 	beq $t2, 0x61, respondToA
 	j checkS
 	
-respondToA: 				# Move the frog left by one pixels
-	la $t3, frogCoor
-	la $t4, frogCoor
+respondToA: 				# Move the frog left by 4 memory address
+	la $t3, frogCoordinate
+	la $t4, frogCoordinate
 	lw $t3, 0($t3)
 	addi $t3, $t3, -1
-	
-	blt $t3, $zero, boundLeft 	# Fix the x location to 0 if it is smaller than 0
-	
-	j noBoundLeft
-	boundLeft:
+	blt $t3, $zero, stopEarlyXLeft 	# Fix the x location if too left
+	j noStopEarlyXLeft
+
+stopEarlyXLeft:
 	add $t3, $zero, $zero
-	noBoundLeft:
+noStopEarlyXLeft:
 	sw $t3, 0($t4)
-	
 	j noKeyEvent
 	
 
@@ -548,20 +538,19 @@ checkS:
 	j checkD
 	
 respondToS: 				# Move the frog down by 4 pixels
-	la $t3, frogCoor
-	la $t4, frogCoor
+	la $t3, frogCoordinate
+	la $t4, frogCoordinate
 	lw $t3, 4($t3)
 	addi $t3, $t3, 4
-	
 	li $t5, 28	
-	bgt $t3, $t5, boundBot 		# Fix the y location to 28 if it is greater than 124
-	
-	j noBoundBot
-	boundBot:
+	bgt $t3, $t5, StopEarlyYBottom 		# Fix the y location to 28 if too l
+	j noStopEarlyYBottom
+
+StopEarlyYBottom:
 	add $t3, $zero, $t5
-	noBoundBot:
+
+noStopEarlyYBottom:
 	sw $t3, 4($t4)
-	
 	j noKeyEvent
 
 
@@ -571,21 +560,20 @@ checkD:
 	j noKeyEvent
 
 respondToD: 				# Move the frog right by 1 pixels
-	la $t3, frogCoor
-	la $t4, frogCoor
+	la $t3, frogCoordinate
+	la $t4, frogCoordinate
 	lw $t3, 0($t3)
 	addi $t3, $t3, 1
-	
 	li $t5, 28
-	bge $t3, $t5, boundRight 	# Fix the x location to 28 if it is greater than 28
-	
-	j noBoundRight
-	boundRight:
+	bge $t3, $t5, StopEarlyXRight 	# Fix the x location to 28 if it is greater than 28
+	j noStopEarlyXRight
+
+StopEarlyXRight:
 	li $t5, 28
 	add $t3, $zero, $t5
-	noBoundRight:
+
+noStopEarlyXRight:
 	sw $t3, 0($t4)
-	
 	j noKeyEvent
 	
 	
@@ -600,15 +588,15 @@ graphCanvas:
 	la $t0, canvas
 	lw $t1, displayAddress
 	
-	addi $t2, $zero, 0 # Use t2 to loop
+	addi $t2, $zero, 0 	# loop with t2
 	li $t3, 1024
 	li $t7, 4
 	
 	lw $t5, 0($t0)
 	sw $t5, 0($t1)
 	
-	drawLoopBegin:
-	bge $t2, $t3, drawStopLoop
+	graphLoopBegin:
+	bge $t2, $t3, graphStopLoop
 	
 	add $t0, $t0, $t7
 	add $t1, $t1, $t7
@@ -616,15 +604,15 @@ graphCanvas:
 	lw $t5, 0($t0)
 	sw $t5, 0($t1)
 	addi $t2, $t2, 1
-	j drawLoopBegin
+	j graphLoopBegin
 	
-	drawStopLoop:
+	graphStopLoop:
 	jr $ra
 	
 
 moveObjsCoor:
 	# Move frog, the speed of the frog could be 0
-	la $t2, frogCoor
+	la $t2, frogCoordinate
 	lw $t1, frogSpeed
 	la $a1, frogMoveEnd
 	j Move
@@ -715,54 +703,54 @@ moveObjsCoor:
 	sw $t3, 0($t2)
 	jr $a1
 	
-graphFloatingObjects: # draw the objects
+graphFloatingObjects: # graph the objects
 	la $s1, canvas
 	
 	lw $t9, woodBrown # Use t9 to store color
 	la $t8, upperRowWoodLocation # t4 for locations
 	la $a0, woodSize # t5 for obj size
 	la $s2 objCurrent0
-	j draw
+	j graph
 	objCurrent0:
 	
 	addi $t8, $t8, 8
 	la $s2 objCurrent1
-	j draw
+	j graph
 	objCurrent1:
 	
 	la $t8, lowerRowWoodLocation
 	la $s2 objCurrent2
-	j draw
+	j graph
 	objCurrent2:
 	
 	addi $t8, $t8, 8
 	la $s2 objCurrent3
-	j draw
+	j graph
 	objCurrent3:
 	
 	lw $t9, carRed # Use t9 to store color
 	la $t8, upperRowCarLocation # t4 for locations
 	la $a0, carSize # t5 for obj size
 	la $s2 objCurrent4
-	j draw
+	j graph
 	objCurrent4:
 	
 	addi $t8, $t8, 8
 	la $s2 objCurrent5
-	j draw
+	j graph
 	objCurrent5:
 	
 	la $t8, lowerRowCarLocation
 	la $s2 objCurrent6
-	j draw
+	j graph
 	objCurrent6:
 	
 	addi $t8, $t8, 8
 	la $s2 objCurrent7
-	j draw
+	j graph
 	objCurrent7:
 	
-	# Start draw life indicator
+	# Start graph life indicator
 	
 	lw $s5, lifeRemain # Store life count to t4
 	li $s4, 0
@@ -816,7 +804,7 @@ graphFloatingObjects: # draw the objects
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
 	
-	j drawRectangleByStack
+	j graphRectangleByStack
 	
 	jumpingTo:
 	addi $s4, $s4, 1
@@ -826,21 +814,21 @@ graphFloatingObjects: # draw the objects
 	jr $ra
 	
 	
-	draw:	
+	graph:	
 	lw $t0, 0($t8) # Coordinates
 	lw $t1, 4($t8)
 	
 	lw $t2, 0($a0) # Width
 	lw $t3, 4($a0) # Height
 	
-	la $s3, drawObj
-	j drawRectangle
+	la $s3, graphObj
+	j graphRectangle
 	
-	drawObj:
+	graphObj:
 	jr $s2
 	
 	
-drawRectangle: # t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
+graphRectangle: # t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
 		# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
 		
 	li $t4, 128 # Transfer the location of y into relative addres values/diatance from the starting position
@@ -1002,7 +990,7 @@ startGraphRoad:
 	j startGraphRoad
 stopGraphRoad:
 	
-	# start drawing bottom grass section
+	# start graphing bottom grass section
 	
 	lw $t1, grassGreen
 	addi $t3, $t2, 0
@@ -1038,7 +1026,7 @@ graphFrog:
 	la $t0, canvas
 	lw $t1, frogGreen # $t1 stores the frog colour code
 	
-	la $t2, frogCoor # $t2 is used to store the address of x and y locations 
+	la $t2, frogCoordinate # $t2 is used to store the address of x and y locations 
 	la $t3, frogLocations # $t3 is used to store relative the addres of frogLocations
 	li $t4, 0
 	li $t5, 12
@@ -1073,7 +1061,7 @@ endDrawFrog:
 
 		
 	
-drawRectangleByStack: 
+graphRectangleByStack: 
 # Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, Width, Height
 # t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
 # x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
