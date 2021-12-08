@@ -78,7 +78,7 @@
 	woodSize: .word 8, 4	# 8*4 size for wood
 	sinkTime: .word 3
 	sinkCount: .word 0
-	isSink: .word 0
+	woodIsSink: .word 0
 	upperRowWoodSpeed: .word 2
 	upperRowWoodLocation: .word 4, 8, 20, 8 
 	lowerRowWoodSpeed: .word -1
@@ -196,7 +196,7 @@ movingAction:
 	la $t1, initialLocationObjects
 	sw $zero, 0($t1)
 	jal sinkWood
-	jal moveObjsCoor
+	jal moveCoordinates
 noHitJump:			# End of the moving process
 	
 	jal graphGameBoard
@@ -610,149 +610,148 @@ graphCanvas:
 	jr $ra
 	
 
-moveObjsCoor:
-	# Move frog, the speed of the frog could be 0
+moveCoordinates:
+	# Move frog
 	la $t2, frogCoordinate
 	lw $t1, frogSpeed
 	la $a1, frogMoveEnd
 	j Move
 	
-	frogMoveEnd:
-	# Fix the frog position in case it fall from the screen
-	lw $t3, 0($t2) # store the x location into t3
+frogMoveEnd:
+	# Fix the frog 
+	lw $t3, 0($t2) 	# store the x location into t3
 	blt $t3, $zero, setToZero
 	li $t4, 28
 	bge $t3, $t4, setToRightBound
 	j frogFixEnd
 	
-	setToRightBound:
+setToRightBound:
 	li $t3, 27
 	sw $t3, 0($t2)
 	
-	setToZero:
+setToZero:
 	li $t3, 0
 	sw $t3, 0($t2)
 	
-	frogFixEnd:
+frogFixEnd:
 
-	# 
 	la $t2, upperRowWoodLocation
 	lw $t1, upperRowWoodSpeed
-	la $a1, woodMoveEnd
+	la $a1, moveWoodStop
 	j Move
 	
-	woodMoveEnd:
+moveWoodStop:
 	addi $t2, $t2, 8
-	la $a1, woodMoveEnd1
+	la $a1, moveWoodStopA
 	j Move
 	
-	woodMoveEnd1:
+moveWoodStopA:
 	la $t2, lowerRowWoodLocation
 	lw $t1, lowerRowWoodSpeed
-	la $a1, woodMoveEnd2
+	la $a1, moveWoodStopB
 	j Move
 	
-	woodMoveEnd2:
+moveWoodStopB:
 	addi $t2, $t2, 8
-	la $a1, woodMoveEnd3
+	la $a1, moveWoodStopC
 	j Move
 	
-	woodMoveEnd3:
-	
+moveWoodStopC:
 	la $t2, upperRowCarLocation
 	lw $t1, upperRowCarSpeed
-	la $a1, carMoveEnd
+	la $a1, moveCarStop
 	j Move
 	
-	carMoveEnd:
+moveCarStop:
 	addi $t2, $t2, 8
-	la $a1, carMoveEnd1
+	la $a1, moveCarStopB
 	j Move
 	
-	carMoveEnd1:
+moveCarStopB:
 	la $t2, lowerRowCarLocation
 	lw $t1, lowerRowCarSpeed
-	la $a1, carMoveEnd2
+	la $a1, moveCarStopC
 	j Move
 	
-	carMoveEnd2:
+moveCarStopC:
 	addi $t2, $t2, 8
-	la $a1, carMoveEnd3
+	la $a1, moveCarStopD
 	j Move
 	
-	carMoveEnd3:
+moveCarStopD:
 	jr $ra
 	
-	Move:
+Move:
 	lw $t3, 0($t2)
 	add $t3, $t3, $t1
 	li $t4, 32
-	bge $t3, $t4, resetCoor
-	blt $t3, $zero, readdCoor
-	j doNoReset
+	bge $t3, $t4, reSetCoordinate
+	blt $t3, $zero, addCoordinate
+	j noReset
 	
-	resetCoor:
+reSetCoordinate:
 	sub $t3, $t3, $t4
-	j doNoReset
+	j noReset
 	
-	readdCoor:
+addCoordinate:
 	addi $t3, $t3, 32
-	j doNoReset
+	j noReset
 	
-	doNoReset:
+noReset:			# do not reset object location
 	sw $t3, 0($t2)
 	jr $a1
 	
-graphFloatingObjects: # graph the objects
+graphFloatingObjects: 		# graph
 	la $s1, canvas
 	
-	lw $t9, woodBrown # Use t9 to store color
+	lw $t9, woodBrown 	# t9 for color
 	la $t8, upperRowWoodLocation # t4 for locations
-	la $a0, woodSize # t5 for obj size
-	la $s2 objCurrent0
+	la $a0, woodSize 	# t5 for object size
+	la $s2 currObject
 	j graph
-	objCurrent0:
-	
+
+currObject:
 	addi $t8, $t8, 8
-	la $s2 objCurrent1
+	la $s2 currObjectB
 	j graph
-	objCurrent1:
 	
+	currObjectB:
 	la $t8, lowerRowWoodLocation
-	la $s2 objCurrent2
+	la $s2 currObjectC
 	j graph
-	objCurrent2:
 	
+currObjectC:
 	addi $t8, $t8, 8
-	la $s2 objCurrent3
+	la $s2 currObjectD
 	j graph
-	objCurrent3:
 	
-	lw $t9, carRed # Use t9 to store color
+currObjectD:
+	lw $t9, carRed 		# t9 for color
 	la $t8, upperRowCarLocation # t4 for locations
-	la $a0, carSize # t5 for obj size
-	la $s2 objCurrent4
+	la $a0, carSize 	# t5 for object size
+	la $s2 currObjectE
 	j graph
-	objCurrent4:
-	
+
+currObjectE:
 	addi $t8, $t8, 8
-	la $s2 objCurrent5
+	la $s2 currObjectF
 	j graph
-	objCurrent5:
 	
+currObjectF:
 	la $t8, lowerRowCarLocation
-	la $s2 objCurrent6
+	la $s2 currObjectG
 	j graph
-	objCurrent6:
 	
+	
+currObjectG:
 	addi $t8, $t8, 8
-	la $s2 objCurrent7
+	la $s2 currLifeBar
 	j graph
-	objCurrent7:
+
+currLifeBar:
+	# Start graph blood bar
 	
-	# Start graph life indicator
-	
-	lw $s5, lifeRemain # Store life count to t4
+	lw $s5, lifeRemain # Store blood to s5
 	li $s4, 0
 	
 	addi $sp, $sp, -4
@@ -760,61 +759,60 @@ graphFloatingObjects: # graph the objects
 	addi $sp, $sp, -4
 	sw $s5, ($sp)
 	
-	startLifeIndicator:
+startLifeBar:
 	lw $s5, ($sp)
 	addi $sp, $sp, 4
 	lw $s4, ($sp)
 	addi $sp, $sp, 4
 	
-	beq $s5, $s4, endDrawObjs # Indicate the remaining lives
+	beq $s5, $s4, endGraphObjs # Indicate the remaining lives
 	
 	addi $s4, $s4, 1
-	addi $sp, $sp, -4 # push s4
+	addi $sp, $sp, -4 	# push s4
 	sw $s4, ($sp)
-	addi $sp, $sp, -4 # push s5
+	addi $sp, $sp, -4 	# push s5
 	sw $s5, ($sp)
 	
 	
 	lw $t9, lifeColor
 	
-	la $t5, jumpingTo # Pop the address of return to stack
+	la $t5, jumpingTo 	# push the address of return to stack
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
 	
-	addi $sp, $sp, -4 # Pop the value of color into stack
+	addi $sp, $sp, -4 	# push the value of color into stack
 	sw $t9, ($sp)
 	
-	la $t5, canvas # pop the address of canvas into stack
+	la $t5, canvas 		# push the address of canvas into stack
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
 	
 	li $t5, 3
 	addi $s4, $s4, -1
-	mul $t5, $t5, $s4 # The x location of the rectangle
+	mul $t5, $t5, $s4 	# The y coordinate of the rectangle
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
 	
 	addi $sp, $sp, -4
-	sw $zero, ($sp) # The y location of the rectangle
+	sw $zero, ($sp)		# y coordinate of the rectangle
 	
 	li $t5, 2 
-	addi $sp, $sp, -4 # Pop the width and height into the stack
+	addi $sp, $sp, -4 	# push width into stack
 	sw $t5, ($sp)
 	
-	addi $sp, $sp, -4
+	addi $sp, $sp, -4	# push height into stack
 	sw $t5, ($sp)
-	
 	j graphRectangleByStack
 	
-	jumpingTo:
+jumpingTo:
 	addi $s4, $s4, 1
-	j startLifeIndicator
+	j startLifeBar
 	
-	endDrawObjs:
+endGraphObjs:
 	jr $ra
 	
 	
-	graph:	
+graph:	
 	lw $t0, 0($t8) # Coordinates
 	lw $t1, 4($t8)
 	
@@ -824,12 +822,13 @@ graphFloatingObjects: # graph the objects
 	la $s3, graphObj
 	j graphRectangle
 	
-	graphObj:
+graphObj:
 	jr $s2
 	
 	
-graphRectangle: # t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
-		# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
+graphRectangle: 
+# t0 -> xCoor, t1 yCoor, t2 -> width, t3 -> height, t9-> color, s1 for canvas
+# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
 		
 	li $t4, 128 # Transfer the location of y into relative addres values/diatance from the starting position
 	mul $t1, $t1, $t4
@@ -847,7 +846,7 @@ graphRectangle: # t0 to store the x and t1 to store the y, t2 to store the width
 	li $t4, 0 # Will be used as loop variant for outer loop
 	li $t5, 0 # Will be used as loop variant for inner loop
 	
-	recOuter:
+recOuter:
 	beq $t4, $t3, recOuterEnd # The outer loop for the y 
 	li $t5, 0
 	
@@ -1040,9 +1039,9 @@ graphFrog:
 	mul $t9, $s6, $s7
 	add $t2, $t8, $t9
 	
-	beginDrawFrog:
+	beginGraphFrog:
 	li $t7, 4
-	beq $t4, $t5, endDrawFrog
+	beq $t4, $t5, endGraphFrog
 	mul $s1, $t7, $t4
 	add $s1, $t3, $s1 # The position index of frogpixel in array
 		
@@ -1055,8 +1054,8 @@ graphFrog:
 	add $t7, $t0, $t7
 	sw $t1, 0($t7)
 	addi $t4, $t4, 1
-	j beginDrawFrog
-endDrawFrog:
+	j beginGraphFrog
+endGraphFrog:
 	jr $ra
 
 		
@@ -1250,7 +1249,7 @@ nextLevelCheck:
 sinkWood:
 # controls the "random" sink of the wood
 	lw $t1, sinkCount
-	lw $t2, isSink
+	lw $t2, woodIsSink
 	lw $t3, sinkTime
 	
 	# Action when float
@@ -1265,24 +1264,24 @@ changeSinkStatus:
 	la $t1, sinkCount
 	sw $zero, ($t1)
 	li $t4, 1
-	sub $t2, $t4, $t2 # change the sinking status
-	la $t1, isSink
+	sub $t2, $t4, $t2 	# change the sinking status
+	la $t1, woodIsSink
 	sw $t2, ($t1)
 	
 	# Case when change to sink
-	beq $t2, $zero, toFloat
+	beq $t2, $zero, floatWood
 	# Action to hide the second wood so that two woods overlay
 	la $t5, upperRowWoodLocation
-	lw $t6, 8($t5) # x coor of second wood
-	lw $t7, ($t5) # x coor of the first wood
-	sub $t8, $t6, $t7 # x of 2 - x of 1
-	sw $t7, 8($t5) # Store the first x into the second x
+	lw $t6, 8($t5) 		# x coor of second wood
+	lw $t7, ($t5) 		# x coor of the first wood
+	sub $t8, $t6, $t7 	# x of 2 - x of 1
+	sw $t7, 8($t5) 		# Store the first x into the second x
 	addi $sp, $sp, -4
-	sw $t8, ($sp) # push the diff into the diference
+	sw $t8, ($sp) 		# push the diff into the diference
 	# end of hiding the wood
 	j endOfChanging
 	
-toFloat:
+floatWood:
 	# Action to restore the second wood
 	la $t5, upperRowWoodLocation
 	lw $t6, ($sp) # t6 for the diff between first and second wood
