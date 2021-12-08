@@ -246,22 +246,22 @@ frogOnWood:
 	la $t0, frogCoordinate 		# t0 store the address of frog location
 	lw $t0, 4($t0) 			# t1 to store the y location of frog
 	li $t1, 8 
-	blt $t0, $t1, noFrogOnWood1 #
+	blt $t0, $t1, noFrogOnWood1 
 	li $t1, 12
-	bge $t0, $t1, noFrogOnWood1 #
+	bge $t0, $t1, noFrogOnWood1
 	
 	# Action when on positive woods
 	lw $t1, upperRowWoodSpeed
 	la $t2, frogSpeed
-	sw $t1, 0($t2) # Assign frog a speed
+	sw $t1, 0($t2) 			# Assign frog a speed
 	j frogOnWoodEnd
 	
-	noFrogOnWood1:
+noFrogOnWood1:
 	
 	li $t1, 12
-	blt $t0, $t1, noFrogOnWood2 #
+	blt $t0, $t1, noFrogOnWood2 
 	li $t1, 16
-	bge $t0, $t1, noFrogOnWood2 #
+	bge $t0, $t1, noFrogOnWood2
 	
 	# Action when on negative woods
 	lw $t1, lowerRowWoodSpeed
@@ -269,12 +269,11 @@ frogOnWood:
 	sw $t1, 0($t2)
 	j frogOnWoodEnd
 	
-	noFrogOnWood2: # Reset the frog speed to 0 if it is not on wood
+noFrogOnWood2: 				# Reset the frog speed to 0 if it is not on wood
 	la $t1, frogSpeed
 	sw $zero, 0($t1)
 	
-	frogOnWoodEnd:
-	
+frogOnWoodEnd:
 	jr $ra
 	
 	
@@ -481,7 +480,7 @@ reactKey:
 
 	lw $t8, 0xffff0000
 	beq $t8, 1, keyboardInput 	# react to key if pressed
-	j noKeyEvent
+	j noKeyPressed
 	
 keyboardInput:
 	
@@ -489,7 +488,7 @@ keyboardInput:
 	
 	beq $t2, 0x70, respondToP 	# trigger p 
 	lw $t6, gameStatus
-	beq $t6, $zero, noKeyEvent 	# if the game status is 0, no key event will be respond
+	beq $t6, $zero, noKeyPressed 	# if the game status is 0, no key event will be respond
 	j checkW
 
 respondToP:
@@ -498,7 +497,7 @@ respondToP:
 	la $t4, gameStatus
 	sub $t3, $t5, $t3 		# If P is pressed, change the game status, either from start to end or end to start
 	sw $t3, 0($t4)			# 1 represent start and 0 represent end
-	j noKeyEvent
+	j noKeyPressed
 
 checkW:
 	lw $t2, 0xffff0004
@@ -519,7 +518,7 @@ stopEarlyY:
 
 noStopEarlyY:
 	sw $t3, 4($t4)			# increment frog.y by 4 up
-	j noKeyEvent
+	j noKeyPressed
 	
 	
 checkA:
@@ -539,7 +538,7 @@ stopEarlyXLeft:
 	add $t3, $zero, $zero
 noStopEarlyXLeft:
 	sw $t3, 0($t4)
-	j noKeyEvent
+	j noKeyPressed
 	
 
 
@@ -562,13 +561,13 @@ StopEarlyYBottom:
 
 noStopEarlyYBottom:
 	sw $t3, 4($t4)
-	j noKeyEvent
+	j noKeyPressed
 
 
 checkD:
 	lw $t2, 0xffff0004
 	beq $t2, 0x64, respondToD
-	j noKeyEvent
+	j noKeyPressed
 
 respondToD: 				# Move the frog right by 1 pixels
 	la $t3, frogCoordinate
@@ -585,13 +584,13 @@ StopEarlyXRight:
 
 noStopEarlyXRight:
 	sw $t3, 0($t4)
-	j noKeyEvent
+	j noKeyPressed
 	
 	
 
 	
 	
-noKeyEvent:
+noKeyPressed:				# just continue tp previous place who call the function
 	jr $ra
 
 	
@@ -599,7 +598,7 @@ graphCanvas:
 	la $t0, canvas
 	lw $t1, displayAddress
 	
-	addi $t2, $zero, 0 	# loop with t2
+	addi $t2, $zero, 0 	# loop using t2
 	li $t3, 1024
 	li $t7, 4
 	
@@ -629,8 +628,7 @@ moveCoordinates:
 	j Move
 	
 frogMoveEnd:
-	# Fix the frog 
-	lw $t3, 0($t2) 	# store the x location into t3
+	lw $t3, 0($t2) 			# t3 = x location
 	blt $t3, $zero, setToZero
 	li $t4, 28
 	bge $t3, $t4, setToRightBound
@@ -708,16 +706,16 @@ addCoordinate:
 	addi $t3, $t3, 32
 	j noReset
 	
-noReset:			# do not reset object location
+noReset:				# do not reset object location
 	sw $t3, 0($t2)
 	jr $a1
 	
-graphFloatingObjects: 		# graph
+graphFloatingObjects: 			# graph
 	la $s1, canvas
 	
-	lw $t9, woodBrown 	# t9 for color
-	la $t8, upperRowWoodLocation # t4 for locations
-	la $a0, woodSize 	# t5 for object size
+	lw $t9, woodBrown 		# t9 = color
+	la $t8, upperRowWoodLocation 	# t4 = locations
+	la $a0, woodSize 		# t5 = object size
 	la $s2 currObject
 	j graph
 
@@ -737,9 +735,9 @@ currObjectC:
 	j graph
 	
 currObjectD:
-	lw $t9, carRed 		# t9 for color
-	la $t8, upperRowCarLocation # t4 for locations
-	la $a0, carSize 	# t5 for object size
+	lw $t9, carRed 			# t9 = color
+	la $t8, upperRowCarLocation 	# t4 = locations
+	la $a0, carSize 		# t5 = object size
 	la $s2 currObjectE
 	j graph
 
@@ -778,9 +776,9 @@ startLifeBar:
 	
 	beq $s5, $s4, endGraphObjs # Indicate the remaining lives
 	addi $s4, $s4, 1
-	addi $sp, $sp, -4 	# push s4
+	addi $sp, $sp, -4 	# push s4 to stack
 	sw $s4, ($sp)
-	addi $sp, $sp, -4 	# push s5
+	addi $sp, $sp, -4 	# push s5 to stack
 	sw $s5, ($sp)
 	lw $t9, lifeColor
 	la $t5, jumpingTo 	# push the address of return to stack
@@ -866,7 +864,7 @@ outerLoop:
 	j addressToCoordinate 	# Calculate location stored in t7
 	
 loopX:
-	add $a1, $k1, $zero 	# a1 = y location to
+	add $a1, $k1, $zero 	# a1 = y location 
 	
 	addi $t7, $t7, 4 	# Add t7 += 4
 	
@@ -902,27 +900,27 @@ addressToCoordinate: 			# Take s7 and let x = k0, y = k1, use s5 to return to pr
 	li $k1, 0 			# Use k0 as the number the s7 can subtract 128
 	li $k0, 0
 	
-	transStart: 			# First determine the y/k1
+	transBegin: 			# First determine the y/k1
 	blt $s7, $zero, transEnd 
 	
 	li $s6, 128
 	sub $s7, $s7, $s6 		# Keep subtracting $s7 by 128
 	addi $k1, $k1, 1 		# Accumulate by add onr to k1
-	j transStart
+	j transBegin
 	
 	transEnd:			# Then Determine the x/k0
 	addi $k1, $k1, -1 		# Add -1 to be the actual value, note that y start from 0 rather than 1
 	addi $s7, $s7, 128 		# Since s7 is smaller than 0 at the end of the loop, we add it back
 	
-	transStart2:
-	blt $s7, $zero, transEnd2 
+	transBeginB:
+	blt $s7, $zero, transEndB 
 	
 	li $s6, 4
 	sub $s7, $s7, $s6
 	addi $k0, $k0, 1
-	j transStart2
+	j transBeginB
 	
-	transEnd2:
+	transEndB:
 	addi $k0, $k0, -1 		# Same as above
 	jr $s5
 	
@@ -1190,13 +1188,14 @@ changeSinkStatus:
 	j endSinking
 	
 floatWood:
-	# Action to restore the second wood
+# Action to restore the second wood
+
 	la $t5, upperRowWoodLocation
-	lw $t6, ($sp) # t6 for the diff between first and second wood
+	lw $t6, ($sp) 		# t6 for the difference between woods
 	addi $sp, $sp, 4
 	lw $t7, ($t5)
-	add $t7, $t7, $t6 # t7 for the actual wood x coor
-	sw $t7, 8($t5) # restore
+	add $t7, $t7, $t6 	# t7 = wood x coordinate
+	sw $t7, 8($t5) 		# restore
 	# End of action
 	
 endSinking:
@@ -1205,7 +1204,6 @@ endSinking:
 	
 resetGameParam:
 # reset game parameter to default value
-
 	
 	la $t1, gameLevel  	# Reset gameLevel
 	sw $zero, 0($t1)
@@ -1271,7 +1269,7 @@ nextLevelCheck:
 	li $t2, 2
 	blt $t1, $t2, noNextLevel	# if current level < 2
 	
-	# Go to next gameLevel
+	# Go to next gameLevel!
 	la $t1, woodSize
 	li $t2, 4
 	sw $t2, ($t1)
@@ -1280,7 +1278,7 @@ nextLevelCheck:
 	lw $t2, nextLevelYellow
 	sw $t2, ($t1)
 	
-noNextLevel:
+noNextLevel:				# do not go to next game level
 	jr $ra
 	
 
