@@ -52,6 +52,7 @@
 	riveBlue: .word 0x4a86e8
 	roadBlack: .word 0x464848
 	frogGreen: .word 0x02ff00
+	successGreen: .word 0x009900
 	
 	# store variable about frog
 	lifeRemain: .word 3
@@ -67,21 +68,21 @@
 	
 	# store variable about car
 	carSize: .word 6, 4	# 6*3 size for car
-	upperRowCarLocation: .word 0, 20, 15, 20
 	upperRowCarSpeed: .word 1
-	lowerRowCarLocation: .word 5, 24, 20, 24
+	upperRowCarLocation: .word 0, 20, 15, 20
 	lowerRowCarSpeed: .word -2
+	lowerRowCarLocation: .word 5, 24, 20, 24
+	
 	
 	# store variables about wood
-	
 	woodSize: .word 8, 4	# 8*4 size for wood
+	sinkTime: .word 3
+	sinkCount: .word 0
+	isSink: .word 0
 	upperRowWoodSpeed: .word -1
 	upperRowWoodLocation: .word 4, 8, 20, 8 
 	lowerRowWoodSpeed: .word -2
 	lowerRowWoodLocation: .word 8, 12, 28, 12 
-	sinkTime: .word 3
-	sinkCount: .word 0
-	isSink: .word 0
 	
 	ObjInitialPosition: .word 0
 	nextLineSignal: .word 15
@@ -94,7 +95,7 @@ main:
 	# Reset the game including data
 	jal resetData
 	
-resetFrogCoor: 			# Reset the coordinate of frog
+resetFrogLocation: 			# Reset the coordinate of frog
 	la $t1, frogCoor
 	li $t2, 15
 	sw $t2, 0($t1) 
@@ -104,10 +105,10 @@ resetFrogCoor: 			# Reset the coordinate of frog
 	
 	# Init
 	Init:
-	jal drawBg
-	jal drawObjs
-	jal drawFrog
-	jal drawCanvas
+	jal graphGameBoard
+	jal graphFloatingObjects
+	jal graphFrog
+	jal graphCanvas
 	jal graphDeadRespawnAnima
 	li $v0, 32
  	li $a0, 1000
@@ -149,15 +150,15 @@ gameStart:
 	lw $t1, 4($t4) # t1 ->  y address
 	addi $t2, $zero, 4 # t2 for width
 	addi $t3, $zero, 4 # t3 for height
-	li $t9, 0x009900 # t9 for color
+	lw $t9, successGreen # t9 for color
 
 	j drawRectangle
 
 	# End painting
 	
 	endCheckingWin:
-	j resetFrogCoor
-	skip:
+	j resetFrogLocation
+skip:
 	# End of checking sin status
 	
 	# reset the frog position if it is hit or drown
@@ -171,7 +172,7 @@ gameStart:
 	la $t2 lifeRemain
 	sw $t1, ($t2)
 	beq $t1, $zero, main
-	j resetFrogCoor
+	j resetFrogLocation
 	
 noHitting: # Frog does not hit anything
 	
@@ -196,10 +197,10 @@ noHitting: # Frog does not hit anything
 	jal moveObjsCoor
 	current4: # End of the moveing process
 	
-	jal drawBg
-	jal drawObjs
-	jal drawFrog
-	jal drawCanvas
+	jal graphGameBoard
+	jal graphFloatingObjects
+	jal graphFrog
+	jal graphCanvas
 	
 	sleep:
 	li $v0, 32
@@ -307,10 +308,10 @@ upperRowCarDetectEnd:
 	 	
 	j finishDetect
 	 	
-	 	# Action in upper car Zone
+	# Action in upper car Zone
 lowerRowCarDetect:
 	 	
-	 	# Checked
+	# Checked
 	la $t9, lowerRowCarDetectEnd # push the parameters into the stack
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
@@ -359,7 +360,7 @@ aboveCarZone:
 	sw $t9, 0($sp)
 	 	
 	j objCollisionWithFrog
-	 	positiveWaterDetectEnd:
+positiveWaterDetectEnd:
 
 	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
 	addi $sp, $sp, 4
@@ -383,32 +384,31 @@ aboveCarZone:
 	la $t9, woodSize	 # Wood width
 	# Store the address of wood width into stack
 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	sw $t9, 0($sp)
 	 	
-	 	j objCollisionWithFrog
+	j objCollisionWithFrog
 	 	
-	 	negativeWaterDetectEnd:
-	 	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
-	 	addi $sp, $sp, 4
-	 	li $t8, 1
-		sub $t9, $t8, $t9 # Store the opposite vaoue into the game status
-	 	la $t5, beenHit # Store the address of hitting Status into t5
-	 	sw $t9, 0($t5)
-	 	j finishDetect
+negativeWaterDetectEnd:
+	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+	addi $sp, $sp, 4
+	li $t8, 1
+	sub $t9, $t8, $t9 # Store the opposite vaoue into the game status
+	la $t5, beenHit # Store the address of hitting Status into t5
+	sw $t9, 0($t5)
+	j finishDetect
 	 	
 	 	
 	 	
-	 	safeZoneAction: # The zone that win the game, can add more features
-		# checked
-	 	li $t9, 1
-	 	la $t8, winStatus
-	 	sw $t9, 0($t8)
-	 	j finishDetect
+safeZoneAction: # The zone that win the game, can add more features
+	# checked
+	li $t9, 1
+	la $t8, winStatus
+	sw $t9, 0($t8)
+	j finishDetect
 	 	
-	 	belowCarZone: 
-	 	
-	 	finishDetect:
-	 	jr $ra
+belowCarZone: 	
+	finishDetect:
+	jr $ra
 	 	
 	 	
 objCollisionWithFrog: # stack: return address, objCoordinate, objSize (Address)
@@ -596,7 +596,7 @@ noKeyEvent:
 	jr $ra
 
 	
-drawCanvas:
+graphCanvas:
 	la $t0, canvas
 	lw $t1, displayAddress
 	
@@ -715,7 +715,7 @@ moveObjsCoor:
 	sw $t3, 0($t2)
 	jr $a1
 	
-drawObjs: # draw the objects
+graphFloatingObjects: # draw the objects
 	la $s1, canvas
 	
 	lw $t9, woodBrown # Use t9 to store color
@@ -940,7 +940,7 @@ addressToCoordinate: # Take s7 as the address and store x to k0, y to k1, use s5
 	jr $s5
 	
 	
-drawBg:
+graphGameBoard:
 	# graph top grass section
 	la $t0, canvas
 	lw $t1, grassGreen # $t1 store color
@@ -955,11 +955,11 @@ drawBg:
 resetSafeZone:
 	li $t2, 256
 startGraphEndGrass:
-		beq $t3, $t2, stopGraphEndGrass
-		sw $t1, 0($t0)
-		addi $t0, $t0, 4
-		addi $t3, $t3, 1
-		j startGraphEndGrass 
+	beq $t3, $t2, stopGraphEndGrass
+	sw $t1, 0($t0)
+	addi $t0, $t0, 4
+	addi $t3, $t3, 1
+	j startGraphEndGrass 
 stopGraphEndGrass:
 	
 	bgt, $t4, $zero, graphRiver
@@ -971,22 +971,22 @@ graphRiver:
 	addi $t2, $t2, 256
 	
 startGraphRiver:
-		beq $t3, $t2, stopGraphRiver
-		sw $t1, 0($t0)
-		addi $t0, $t0, 4
-		addi $t3, $t3, 1
-		j startGraphRiver 
+	beq $t3, $t2, stopGraphRiver
+	sw $t1, 0($t0)
+	addi $t0, $t0, 4
+	addi $t3, $t3, 1
+	j startGraphRiver 
 stopGraphRiver:
 	# graph middle resting zone
 	lw $t1, middleRestPurple
 	addi $t3, $t2, 0
 	addi $t2, $t2, 128
 startGraphMiddleRest:
-		beq $t3, $t2, stopGraphMiddleRest
-		sw $t1, 0($t0)
-		addi $t0, $t0, 4
-		addi $t3, $t3, 1
-		j startGraphMiddleRest 
+	beq $t3, $t2, stopGraphMiddleRest
+	sw $t1, 0($t0)
+	addi $t0, $t0, 4
+	addi $t3, $t3, 1
+	j startGraphMiddleRest 
 stopGraphMiddleRest:
 	
 	# graph read section
@@ -995,11 +995,11 @@ stopGraphMiddleRest:
 	addi $t2, $t2, 256
 	
 startGraphRoad:
-		beq $t3, $t2, stopGraphRoad
-		sw $t1, 0($t0)
-		addi $t0, $t0, 4
-		addi $t3, $t3, 1
-		j startGraphRoad
+	beq $t3, $t2, stopGraphRoad
+	sw $t1, 0($t0)
+	addi $t0, $t0, 4
+	addi $t3, $t3, 1
+	j startGraphRoad
 stopGraphRoad:
 	
 	# start drawing bottom grass section
@@ -1009,11 +1009,11 @@ stopGraphRoad:
 	addi $t2, $t2, 128
 	
 startGraphBeginningGrass:
-		beq $t3, $t2, stopGraphBeginningGrass
-		sw $t1, 0($t0)
-		addi $t0, $t0, 4
-		addi $t3, $t3, 1
-		j startGraphBeginningGrass
+	beq $t3, $t2, stopGraphBeginningGrass
+	sw $t1, 0($t0)
+	addi $t0, $t0, 4
+	addi $t3, $t3, 1
+	j startGraphBeginningGrass
 stopGraphBeginningGrass:
 	jr $ra
 		
@@ -1034,7 +1034,7 @@ graphDeadRespawnAnima:
 	jr $ra
 	
 		
-drawFrog:
+graphFrog:
 	la $t0, canvas
 	lw $t1, frogGreen # $t1 stores the frog colour code
 	
@@ -1053,29 +1053,30 @@ drawFrog:
 	add $t2, $t8, $t9
 	
 	beginDrawFrog:
-		li $t7, 4
-		beq $t4, $t5, endDrawFrog
-		mul $s1, $t7, $t4
-		add $s1, $t3, $s1 # The position index of frogpixel in array
+	li $t7, 4
+	beq $t4, $t5, endDrawFrog
+	mul $s1, $t7, $t4
+	add $s1, $t3, $s1 # The position index of frogpixel in array
 		
-		lw $t6, 0($s1) # t6 to store the distance from the initial position, already by 4
+	lw $t6, 0($s1) # t6 to store the distance from the initial position, already by 4
 		
-		# initial posiiton, should be multiplied by 4
-		add $t7, $t2, $zero
+	# initial posiiton, should be multiplied by 4
+	add $t7, $t2, $zero
 
-		add $t7, $t7, $t6 # let t7 to store the absolute position
-		add $t7, $t0, $t7
-		sw $t1, 0($t7)
-		addi $t4, $t4, 1
-		j beginDrawFrog
-	endDrawFrog:
-		jr $ra
+	add $t7, $t7, $t6 # let t7 to store the absolute position
+	add $t7, $t0, $t7
+	sw $t1, 0($t7)
+	addi $t4, $t4, 1
+	j beginDrawFrog
+endDrawFrog:
+	jr $ra
 
 		
 	
-drawRectangleByStack: # Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, Width, Height
-		# t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
-		# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
+drawRectangleByStack: 
+# Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, Width, Height
+# t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
+# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
 	lw $t3, 0($sp) # t3 for height
 	addi $sp, $sp, 4
 	lw $t2, ($sp) # t2 for width
