@@ -54,13 +54,13 @@
 	frogGreen: .word 0x02ff00
 	
 	# store variable about frog
+	lifeRemain: .word 3
 	safeZoneStatus: .word 1
+	beenHit: .word 0
 	winStatus: .word 0
 	gameStatus: .word 0
-	lifeRemain: .word 3
-	beenHit: .word 0
 	
-	frogPixel: .word 0, 12, 128, 132, 136, 140, 260, 264, 384, 388, 392, 396
+	frogLocations: .word 0, 12, 128, 132, 136, 140, 260, 264, 384, 388, 392, 396
 	frogCoor: .word 15, 28  # store frog corrdinate in (x, y) format
 	frogSize: .word 4, 4	# store frog size as 4*4
 	frogSpeed: .word 0
@@ -83,10 +83,8 @@
 	sinkCount: .word 0
 	isSink: .word 0
 	
-	iterate: .word 0
-	invariant: .word 15
-	temp: .space 20 # Used as temporary array
-	
+	ObjInitialPosition: .word 0
+	nextLineSignal: .word 15
 	canvas: .space 1536
 
 .text 
@@ -175,7 +173,7 @@ gameStart:
 	beq $t1, $zero, main
 	j resetFrogCoor
 	
-	noHitting: # Frog does not hit anything
+noHitting: # Frog does not hit anything
 	
 	# Check if the frog is on wood and react accordingly
 	jal frogOnWood
@@ -183,16 +181,16 @@ gameStart:
 	lw $t1, gameStatus # is the game status is 0, freeze the canvas
 	beq $t1, $zero, sleep
 	
-	lw $t1, iterate # Decide how fast shoud the objects be moved
-	lw $t2, invariant
+	lw $t1, ObjInitialPosition # Decide how fast shoud the objects be moved
+	lw $t2, nextLineSignal
 	bge $t1, $t2, moveBranch
 	addi $t1, $t1, 1
-	la $t2, iterate
+	la $t2, ObjInitialPosition
 	sw $t1, 0($t2)
 	j current4
 	
 	moveBranch:
-	la $t1, iterate
+	la $t1, ObjInitialPosition
 	sw $zero, 0($t1)
 	jal sinkWood
 	jal moveObjsCoor
@@ -1044,7 +1042,7 @@ drawFrog:
 	lw $t1, frogGreen # $t1 stores the frog colour code
 	
 	la $t2, frogCoor # $t2 is used to store the address of x and y coordinates 
-	la $t3, frogPixel # $t3 is used to store relative the addres of frogPixel
+	la $t3, frogLocations # $t3 is used to store relative the addres of frogLocations
 	li $t4, 0
 	li $t5, 12
 	
@@ -1170,12 +1168,12 @@ drawRectangleByStack: # Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, 
 increaseSpeed:
 	
 	li $t3, 3
-	lw $t0, invariant
+	lw $t0, nextLineSignal
 	li $t1, 5
 	ble $t0, $t1, skipSpeedingPWood
 	sub $t0, $t0, $t3
 	
-	la $t1, invariant
+	la $t1, nextLineSignal
 	sw $t0, ($t1)
 	skipSpeedingPWood:
 	# end of speeding up
@@ -1235,10 +1233,10 @@ resetData:
 	li $t2, 3
 	sw $t2, 0($t1)
 	
-	la $t1, iterate
+	la $t1, ObjInitialPosition
 	sw $zero, 0($t1)
 	
-	la $t1, invariant
+	la $t1, nextLineSignal
 	li $t2, 15
 	sw $t2, 0($t1)
 	
