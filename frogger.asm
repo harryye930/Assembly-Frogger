@@ -18,12 +18,14 @@
 # - Milestone 5 
 #
 # Which approved additional features have been implemented?
-# (See the assignment handout for the list of additional features)
+# - Hard Features
+# 1. Make a second gameLevel that starts after the player completes first gameLevel  （when the life remaining turns from red to yellow)
+# 2. Have some of the floating objects sink and reappear
+# 
+# - Easy Features
 # 1. Display the number of lives remaining.
-# 2. Dynamic increase in difficulty as game progresses
+# 2. Dynamic increase in difficulty (both speed and obstacles) as game progresses
 # 3. Have objects in different rows move at different speeds
-# 4. Make a second gameLevel that starts after the player completes first gameLevel  （when the life remaining turns from red to yellow)
-# 5. Have some of the floating objects sink and reappear
 #
 # Any additional information that the TA needs to know:
 # - You need to press p (Play) to start playing game, and hit p again once you have losed all lives :)
@@ -86,11 +88,19 @@
 	lowerRowWoodLocation: .word 8, 12, 28, 12 
 	
 	initialLocationObjects: .word 0
-	nextLineSignal: .word 15
+	nextLineOperation: .word 15
 	canvas: .space 1536
 
 .text 
-	
+# temperary gresiter convensions:
+# t0 = x location
+# t1 = y location
+# t2 = width
+# t3 = height 	
+# t9 = color to draw	
+# s1 = address of canvas 
+		
+
 main:
 	
 	# Reset the game including data
@@ -186,7 +196,7 @@ noHit:
 	beq $t1, $zero, sleep
 	
 	lw $t1, initialLocationObjects # Decide how fast shoud the objects be moved
-	lw $t2, nextLineSignal
+	lw $t2, nextLineOperation
 	bge $t1, $t2, movingAction
 	addi $t1, $t1, 1
 	la $t2, initialLocationObjects
@@ -544,7 +554,7 @@ respondToS: 				# Move the frog down by 4 pixels
 	lw $t3, 4($t3)
 	addi $t3, $t3, 4
 	li $t5, 28	
-	bgt $t3, $t5, StopEarlyYBottom 		# Fix the y location to 28 if too l
+	bgt $t3, $t5, StopEarlyYBottom 	# Fix the y location to 28 if too large
 	j noStopEarlyYBottom
 
 StopEarlyYBottom:
@@ -852,22 +862,22 @@ outerLoop:
 	
 	
 	la $s5, loopX
-	addi $s7, $t7, 0 	# Set s7 to the t7
-	j addressToCoordinate 	# Calculate the location
+	addi $s7, $t7, 0 	# s7= t7
+	j addressToCoordinate 	# Calculate location stored in t7
 	
 loopX:
-	add $a1, $k1, $zero # Store the y location to a1, later to compare with a2
+	add $a1, $k1, $zero 	# a1 = y location to
 	
-	addi $t7, $t7, 4 # Add t7 by 4, move the cursor right by one pixel
+	addi $t7, $t7, 4 	# Add t7 += 4
 	
 	la $s5, recCurrent1
-	addi $s7, $t7, 0 # Set s7 to the t7, passing the parameter to the helper function
-	j addressToCoordinate # Calculate the location
+	addi $s7, $t7, 0 	# s7= t7
+	j addressToCoordinate 	# Calculate the location stored in t7
 	
 	recCurrent1:
-	add $a2, $k1, $zero 		# Store the later y location as a2
+	add $a2, $k1, $zero 		#  a2 =  y location
 	
-	bgt $a2, $a1, moveOneLower 	# If a2 is greater than a1, than move the vertical cursor up by one pixel
+	bgt $a2, $a1, moveOneLower 	# If a2 geq a1, than move 1 unit lower
 	j loopEnds
 	
 moveOneLower:
@@ -879,33 +889,33 @@ loopEnds:
 	j innerLoop
 	
 	innerLoopEnd:
-	addi $t4, $t4, 1 # Accumulate
-	addi $t6, $t6, 128 # Add 128 to t6 so that the cursor move one pixel down
-	addi $t7, $t6, 0 # reset the t7 to t6 so that its horizontal position is back on zero
+	addi $t4, $t4, 1 	
+	addi $t6, $t6, 128 		# t6 += 128
+	addi $t7, $t6, 0 		# reset t7 = t6
 	j outerLoop
 	
 	outerLoopEnd:
 	jr $s3
 	
-addressToCoordinate: # Take s7 as the address and store x to k0, y to k1, use s5 to jump back
+addressToCoordinate: 			# Take s7 and let x = k0, y = k1, use s5 to return to previous iteration
 
-	li $k1, 0 # Use k0 as the number the s7 can subtract 128
+	li $k1, 0 			# Use k0 as the number the s7 can subtract 128
 	li $k0, 0
 	
-	transStart: # First determine the y/k1
-	blt $s7, $zero, transEnd # 
+	transStart: 			# First determine the y/k1
+	blt $s7, $zero, transEnd 
 	
 	li $s6, 128
-	sub $s7, $s7, $s6 # Keep subtracting $s7 by 128
-	addi $k1, $k1, 1 # Accumulate by add onr to k1
+	sub $s7, $s7, $s6 		# Keep subtracting $s7 by 128
+	addi $k1, $k1, 1 		# Accumulate by add onr to k1
 	j transStart
 	
-	transEnd: # Then Determine the x/k0
-	addi $k1, $k1, -1 # Add -1 to be the actual value, note that y start from 0 rather than 1
-	addi $s7, $s7, 128 # Since s7 is smaller than 0 at the end of the loop, we add it back
+	transEnd:			# Then Determine the x/k0
+	addi $k1, $k1, -1 		# Add -1 to be the actual value, note that y start from 0 rather than 1
+	addi $s7, $s7, 128 		# Since s7 is smaller than 0 at the end of the loop, we add it back
 	
 	transStart2:
-	blt $s7, $zero, transEnd2 # 
+	blt $s7, $zero, transEnd2 
 	
 	li $s6, 4
 	sub $s7, $s7, $s6
@@ -913,7 +923,7 @@ addressToCoordinate: # Take s7 as the address and store x to k0, y to k1, use s5
 	j transStart2
 	
 	transEnd2:
-	addi $k0, $k0, -1 # Same as above
+	addi $k0, $k0, -1 		# Same as above
 	jr $s5
 	
 	
@@ -1013,10 +1023,10 @@ graphDeadRespawnAnima:
 		
 graphFrog:
 	la $t0, canvas
-	lw $t1, frogGreen # $t1 stores the frog colour code
+	lw $t1, frogGreen 		# t1  = frog colour
 	
-	la $t2, frogCoordinate # $t2 is used to store the address of x and y locations 
-	la $t3, frogLocations # $t3 is used to store relative the addres of frogLocations
+	la $t2, frogCoordinate 		# t2 = x and y locations
+	la $t3, frogLocations 		# t3 = relative the addres of frogLocations
 	li $t4, 0
 	li $t5, 12
 	
@@ -1033,59 +1043,56 @@ graphFrog:
 	li $t7, 4
 	beq $t4, $t5, endGraphFrog
 	mul $s1, $t7, $t4
-	add $s1, $t3, $s1 # The position index of frogpixel in array
+	add $s1, $t3, $s1 		# The position index of frogpixel in array
 		
-	lw $t6, 0($s1) # t6 to store the distance from the initial position, already by 4
+	lw $t6, 0($s1) 			# t6 to store the offset away from the initial location
 		
-	# initial posiiton, should be multiplied by 4
+	# initial posiiton
 	add $t7, $t2, $zero
 
-	add $t7, $t7, $t6 # let t7 to store the absolute position
+	add $t7, $t7, $t6 		# let t7 to store the absolute location address
 	add $t7, $t0, $t7
 	sw $t1, 0($t7)
 	addi $t4, $t4, 1
 	j beginGraphFrog
+
 endGraphFrog:
 	jr $ra
 
 		
 	
 graphRectangleByStack: 
-# Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, Width, Height
+# Stack: returnAddress, color, Canvas, xCoor, yCoor, Width, Height
 # t0 -> xCoor, t1 yCoor, t2 -> width, t3 -> height, t9-> color, s1 for canvas
 # x and y goes to 32,  use s3 to jimp back to the previous iteration
 
-	lw $t3, 0($sp) # t3 for height
+	lw $t3, 0($sp) 		# t3 = height
 	addi $sp, $sp, 4
-	lw $t2, ($sp) # t2 for width
+	lw $t2, ($sp) 		# t2 = width
 	addi $sp, $sp, 4
-	lw $t1, ($sp) # t1 for y location
+	lw $t1, ($sp) 		# t1 = y location
 	addi $sp, $sp, 4
-	lw $t0, ($sp) # t0 for x location
+	lw $t0, ($sp) 		# t0 = x location
 	addi $sp, $sp, 4
-	
-	lw $s1, ($sp) # s1 for address of canvas 
+	lw $s1, ($sp) 		# s1 = address of canvas 
 	addi $sp, $sp, 4
-	
-	lw $t9, ($sp) # t9 for color value
+	lw $t9, ($sp) 		# t9 = color
 	addi $sp, $sp, 4
-	
-	lw $s3, ($sp) # s3 for jump back address
+	lw $s3, ($sp) 		# s3 for return to previous iteration address
 	addi $sp, $sp, 4
-	
-	li $t4, 128 # Transfer the location of y into relative addres values/diatance from the starting position
+	li $t4, 128 		# Transfer the location of y into relative addres values/diatance from the starting position
 	mul $t1, $t1, $t4
-	addi $v1, $t1, 0 # index for looping
+	addi $v1, $t1, 0 	# index for looping
 	
-	li $t4, 4 # Transfer the location of x into relative addres values/diatance from the starting position
+	li $t4, 4 		# Transfer the location of x into relative addres values/diatance from the starting position
 	mul $t0, $t0, $t4
-	addi $v0, $t0, 0 # index for looping
+	addi $v0, $t0, 0 	# index for looping
 	
-	add $t6, $t0, $t1 # Store the value of distance from initial point to current point, already by 4
-	add $t7, $t0, $t1 # Same as above, used as cursor for looping, change horizontally
+	add $t6, $t0, $t1 	# Store the value of distance from initial point to current point, already by 4
+	add $t7, $t0, $t1 	# Same as above, used as cursor for looping, change horizontally
 	
-	li $t4, 0 # Will be used as loop variant for outer loop
-	li $t5, 0 # Will be used as loop variant for inner loop
+	li $t4, 0		# Will be used as loop variant for outer loop
+	li $t5, 0 		# Will be used as loop variant for inner loop
 	
 	outerLoop1:
 	beq $t4, $t3, outerLoopEnd1 # The outer loop for the y 
@@ -1095,29 +1102,27 @@ graphRectangleByStack:
 	beq $t5, $t2, innerLoopEnd1 # The inner loop for the x
 	
 	add $a3, $t7, $s1
-	sw $t9, 0($a3) # paint the color
+	sw $t9, 0($a3)
 	
-	addi $t5, $t5, 1 # Accumulate
-	
-	
+	addi $t5, $t5, 1	# increment
 	
 	la $s5, loopA
-	addi $s7, $t7, 0 # Set s7 to the t7, passing the parameter to the helper function
-	j addressToCoordinate # Calculate the location
+	addi $s7, $t7, 0 	# t7 = s7
+	j addressToCoordinate 	# Calculate the location
 	
 loopA:
-	add $a1, $k1, $zero # Store the y location to a1, later to compare with a2
+	add $a1, $k1, $zero 	# a1 = y location
 	
-	addi $t7, $t7, 4 # Add t7 by 4, move the cursor right by one pixel
+	addi $t7, $t7, 4 	#t7+=4, one to the right
 	
 	la $s5, loopB
-	addi $s7, $t7, 0 # Set s7 to the t7, passing the parameter to the helper function
-	j addressToCoordinate # Calculate the location
+	addi $s7, $t7, 0 	# Set t7 =s7
+	j addressToCoordinate 	# Calculate the location
 	
 loopB:
-	add $a2, $k1, $zero # Store the later y location as a2
+	add $a2, $k1, $zero 	#  a2 = y location
 	
-	bgt $a2, $a1, moveOneLower1 # If a2 is greater than a1, than move the vertical cursor up by one pixel
+	bgt $a2, $a1, moveOneLower1 # If a2 geq a1, move one down
 	j loopEnds1
 	
 	moveOneLower1:
@@ -1129,9 +1134,9 @@ loopEnds1:
 	j innerLoop1
 	
 innerLoopEnd1:
-	addi $t4, $t4, 1 # Accumulate
-	addi $t6, $t6, 128 # Add 128 to t6 so that the cursor move one pixel down
-	addi $t7, $t6, 0 # reset the t7 to t6 so that its horizontal position is back on zero
+	addi $t4, $t4, 1 
+	addi $t6, $t6, 128 		# t6 += 128 so we move 1 pix down
+	addi $t7, $t6, 0 		# reset t7
 	j outerLoop1
 	
 outerLoopEnd1:
@@ -1140,19 +1145,66 @@ outerLoopEnd1:
 increaseSpeed:
 	
 	li $t3, 3
-	lw $t0, nextLineSignal
+	lw $t0, nextLineOperation
 	li $t1, 5
-	ble $t0, $t1, skipSpeedingPWood
+	ble $t0, $t1, stopAddWoodSpeed
 	sub $t0, $t0, $t3
 	
-	la $t1, nextLineSignal
+	la $t1, nextLineOperation
 	sw $t0, ($t1)
-	skipSpeedingPWood:
-	# end of speeding up
+stopAddWoodSpeed:
+	jr $ra
+
+sinkWood:
+# controls the "random" sink of the wood
+	lw $t1, sinkCount
+	lw $t2, woodIsSink
+	lw $t3, sinkTime
+	
+	# Action when float
+	addi $t1, $t1, 1
+	la $t4, sinkCount
+	sw $t1, ($t4)
+	bge $t1, $t3, changeSinkStatus
+	j endSinking
+	
+changeSinkStatus:
+	la $t1, sinkCount
+	sw $zero, ($t1)
+	li $t4, 1
+	sub $t2, $t4, $t2 	# change the sinking status
+	la $t1, woodIsSink
+	sw $t2, ($t1)
+	
+# when we decided to sink
+	beq $t2, $zero, floatWood
+# graph the wood with the same colour as water
+	la $t5, upperRowWoodLocation
+	lw $t6, 8($t5) 		# x location of second wood
+	lw $t7, ($t5) 		# x location of the first wood
+	sub $t8, $t6, $t7 	# x of 2 - x of 1
+	sw $t7, 8($t5) 		
+	addi $sp, $sp, -4
+	sw $t8, ($sp) 		# push the diff into the diference
+# end of hiding the wood
+	j endSinking
+	
+floatWood:
+	# Action to restore the second wood
+	la $t5, upperRowWoodLocation
+	lw $t6, ($sp) # t6 for the diff between first and second wood
+	addi $sp, $sp, 4
+	lw $t7, ($t5)
+	add $t7, $t7, $t6 # t7 for the actual wood x coor
+	sw $t7, 8($t5) # restore
+	# End of action
+	
+endSinking:
 	jr $ra
 	
+	
 resetGameParam:
-	# Reset the data
+# reset game parameter to default value
 
 	
 	la $t1, gameLevel  	# Reset gameLevel
@@ -1184,15 +1236,13 @@ resetGameParam:
 	la $t1, frogSpeed 	# reset frog speed
 	sw $zero, 0($t1)
 	
-	la $t1, nextLineSignal  
+	la $t1, nextLineOperation  
 	li $t2, 15
 	sw $t2, 0($t1)
-	
-	
+
 	la $t1, safeZoneStatus
 	li $t2, 1
 	sw $t2, 0($t1)
-	
 	
 	la $t1, woodSize 		# reset the wood size x_location
 	li $t2, 8
@@ -1233,51 +1283,4 @@ nextLevelCheck:
 noNextLevel:
 	jr $ra
 	
-sinkWood:
-# controls the "random" sink of the wood
-	lw $t1, sinkCount
-	lw $t2, woodIsSink
-	lw $t3, sinkTime
-	
-	# Action when float
-	addi $t1, $t1, 1
-	la $t4, sinkCount
-	sw $t1, ($t4)
-	bge $t1, $t3, changeSinkStatus
-	j endOfChanging
-	
-	
-changeSinkStatus:
-	la $t1, sinkCount
-	sw $zero, ($t1)
-	li $t4, 1
-	sub $t2, $t4, $t2 	# change the sinking status
-	la $t1, woodIsSink
-	sw $t2, ($t1)
-	
-	# Case when change to sink
-	beq $t2, $zero, floatWood
-	# Action to hide the second wood so that two woods overlay
-	la $t5, upperRowWoodLocation
-	lw $t6, 8($t5) 		# x coor of second wood
-	lw $t7, ($t5) 		# x coor of the first wood
-	sub $t8, $t6, $t7 	# x of 2 - x of 1
-	sw $t7, 8($t5) 		# Store the first x into the second x
-	addi $sp, $sp, -4
-	sw $t8, ($sp) 		# push the diff into the diference
-	# end of hiding the wood
-	j endOfChanging
-	
-floatWood:
-	# Action to restore the second wood
-	la $t5, upperRowWoodLocation
-	lw $t6, ($sp) # t6 for the diff between first and second wood
-	addi $sp, $sp, 4
-	lw $t7, ($t5)
-	add $t7, $t7, $t6 # t7 for the actual wood x coor
-	sw $t7, 8($t5) # restore
-	# End of action
-	
-endOfChanging:
-	jr $ra
-	
+
