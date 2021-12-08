@@ -267,125 +267,122 @@ frogOnWood:
 	
 collisionDetect: 
 # detect if the collision is happening
-		# t0 -> x coord
-		# t1 -> y coord
-		# t9 -> color
-		# input stack: coor1, coor2, size1, size2
-		# return flag, 1 for collision in car zone and drown in water zone
+# t0 -> x coord, t1 -> y coord, t9 -> color, input stack: coor1, coor2, size1, size2
+# return flag, collision in car zone and drawn in water zone
+	
 		
+	la $t0, frogCoor # to store the address of frog coordinate
+	lw $t1, 4($t0) # t1 to store the y coordinate of frog
+	lw $t0, 0($t0) # t0 to store the x coordinate, override the previous value
+	 	
+	# First if the frog is in Car Zone
+	li $t9, 20 # The beginning row of Car Zone
+	blt $t1, $t9, aboveCarZone # frog is above the car Zone
+	li $t9, 28  # the endingt row of car zone
+	bge $t1, $t9, belowCarZone # frog is below the car Zone
+	 	
+	# At this point, frog is in the car Zone
+	li $t9, 24
+	bge $t1, $t9, lowerRowCarDetect 
+	 	
+	# Action if in lower row car Zone, checked
+	la $t9, upperRowCarDetectEnd # push the parameters into the stack
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 		
-		la $t0, frogCoor # to store the address of frog coordinate
-		lw $t1, 4($t0) # t1 to store the y coordinate of frog
-		lw $t0, 0($t0) # t0 to store the x coordinate, override the previous value
+	la $t9, upperRowCarLocation
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	# First if the frog is in Car Zone
-	 	li $t9, 20 # The beginning row of Car Zone
-	 	blt $t1, $t9, aboveCarZone # frog is above the car Zone
-	 	li $t9, 28  # the endingt row of car zone
-	 	bge $t1, $t9, belowCarZone # frog is below the car Zone
+	la $t9, carSize
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	# At this point, frog is in the car Zone
-	 	li $t9, 24
-	 	bge $t1, $t9, lowerRowCarDetect 
-	 	
-	 	# Action if in lower row car Zone, checked
-	 	la $t9, upperRowCarDetectEnd # push the parameters into the stack
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
-	 	
-	 	la $t9, upperRowCarLocation
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
-	 	
-	 	la $t9, carSize
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
-	 	
-	 	j objCollisionWithFrog
+	j objCollisionWithFrog
 upperRowCarDetectEnd:
-	 	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
-	 	addi $sp, $sp, 4
-	 	la $t5, beenHit # Store the address of hitting Status into t5
-	 	sw $t9, 0($t5)
+	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+	addi $sp, $sp, 4
+	la $t5, beenHit # Store the address of hitting Status into t5
+	sw $t9, 0($t5)
 	 	
-	 	j finishDetect
+	j finishDetect
 	 	
-	 	# Action in quick car Zone
+	 	# Action in upper car Zone
 lowerRowCarDetect:
 	 	
 	 	# Checked
-	 	la $t9, lowerRowCarDetectEnd # push the parameters into the stack
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	la $t9, lowerRowCarDetectEnd # push the parameters into the stack
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	la $t9, lowerRowCarLocation
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	la $t9, lowerRowCarLocation
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	la $t9, carSize
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	la $t9, carSize
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	j objCollisionWithFrog
-	 	lowerRowCarDetectEnd:
-	 	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
-	 	addi $sp, $sp, 4
-	 	la $t5, beenHit # Store the address of hitting Status into t5
-	 	sw $t9, 0($t5)
-	 	j finishDetect
+	j objCollisionWithFrog
+lowerRowCarDetectEnd:
+	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+	addi $sp, $sp, 4
+	la $t5, beenHit # Store the address of hitting Status into t5
+	sw $t9, 0($t5)
+	j finishDetect
 	 	
-	 	aboveCarZone:
-	 	li $t9, 8 # t9 store the starting y coordinate of waterZone
-	 	blt $t1, $t9, safeZoneAction
+aboveCarZone:
+	li $t9, 8 # t9 store the starting y coordinate of waterZone
+	blt $t1, $t9, safeZoneAction
 	 	
-	 	# Action when in mid Zone
-	 	li $t9, 16
-	 	beq $t1, $t9, finishDetect
-	 	li $t9, 12
-	 	beq $t1, $t9, negativeWaterDetect
+	# Action when in mid Zone
+	li $t9, 16
+	beq $t1, $t9, finishDetect
+	li $t9, 12
+	beq $t1, $t9, negativeWaterDetect
 	 	
-	 	# Action in positiveWater Zone
-		# Checked
-	 	la $t9, positiveWaterDetectEnd # push the parameters into the stack
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	# Action in positiveWater Zone
+	# Checked
+	la $t9, positiveWaterDetectEnd # push the parameters into the stack
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	addi $sp, $sp, -4
-	 	la $t8, upperRowWoodLocation
-	 	sw $t8, 0($sp) # store the address of x, y coordinate into stack
+	addi $sp, $sp, -4
+	la $t8, upperRowWoodLocation
+	sw $t8, 0($sp) # store the address of x, y coordinate into stack
 	 	
 	 	
-	 	la $t9, woodSize
+	la $t9, woodSize
 	 	
-		# Store the address of wood width into stack
-		addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	# Store the address of wood width into stack
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	j objCollisionWithFrog
+	j objCollisionWithFrog
 	 	positiveWaterDetectEnd:
 
-	 	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
-	 	addi $sp, $sp, 4
-	 	li $t8, 1
-		sub $t9, $t8, $t9 # Store the opposite vaoue into the game status
-	 	la $t5, beenHit # Store the address of hitting Status into t5
-	 	sw $t9, 0($t5) 
-	 	j finishDetect
+	lw $t9, 0($sp) # Store the hitting status into the t9 regiter
+	addi $sp, $sp, 4
+	li $t8, 1
+	sub $t9, $t8, $t9 # Store the opposite vaoue into the game status
+	la $t5, beenHit # Store the address of hitting Status into t5
+	sw $t9, 0($t5) 
+	j finishDetect
 	 	
-	 	# Action in negative water Zone
-	 	negativeWaterDetect:
-	 	la $t9, negativeWaterDetectEnd # push the parameters into the stack
-	 	addi $sp, $sp, -4
-	 	sw $t9, 0($sp)
+	# Action in negative water Zone
+	negativeWaterDetect:
+	la $t9, negativeWaterDetectEnd # push the parameters into the stack
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	 	
-	 	addi $sp, $sp, -4
-	 	la $t8, lowerRowWoodLocation
-	 	sw $t8, 0($sp) # store the address of x, y coordinate into stack
+	addi $sp, $sp, -4
+	la $t8, lowerRowWoodLocation
+	sw $t8, 0($sp) # store the address of x, y coordinate into stack
 	 	
 	 	
-	 	la $t9, woodSize	 # Wood width
-		# Store the address of wood width into stack
-		addi $sp, $sp, -4
+	la $t9, woodSize	 # Wood width
+	# Store the address of wood width into stack
+	addi $sp, $sp, -4
 	 	sw $t9, 0($sp)
 	 	
 	 	j objCollisionWithFrog
@@ -1315,7 +1312,7 @@ endOfChanging:
 Testing:
 	li $v0,1
 
-move $a0,$t2
+move $a0, $t2
 
 syscall
 
