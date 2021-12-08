@@ -22,7 +22,7 @@
 # 1. Display the number of lives remaining.
 # 2. Dynamic increase in difficulty as game progresses
 # 3. Have objects in different rows move at different speeds
-# 4. Make a second gameLevel that starts after the player completes first gameLevel
+# 4. Make a second gameLevel that starts after the player completes first gameLevel  （when the life remaining turns from red to yellow)
 # 5. Have some of the floating objects sink and reappear
 #
 # Any additional information that the TA needs to know:
@@ -53,6 +53,7 @@
 	roadBlack: .word 0x464848
 	frogGreen: .word 0x02ff00
 	successGreen: .word 0x009900
+	nextLevelYellow: .word 0xFAFA37
 	
 	# store variable about frog
 	lifeRemain: .word 3
@@ -749,9 +750,9 @@ currObjectG:
 	j graph
 
 currLifeBar:
-	# Start graph blood bar
+# Start graph blood bar
 	
-	lw $s5, lifeRemain # Store blood to s5
+	lw $s5, lifeRemain 	# Store blood to s5
 	li $s4, 0
 	
 	addi $sp, $sp, -4
@@ -766,41 +767,31 @@ startLifeBar:
 	addi $sp, $sp, 4
 	
 	beq $s5, $s4, endGraphObjs # Indicate the remaining lives
-	
 	addi $s4, $s4, 1
 	addi $sp, $sp, -4 	# push s4
 	sw $s4, ($sp)
 	addi $sp, $sp, -4 	# push s5
 	sw $s5, ($sp)
-	
-	
 	lw $t9, lifeColor
-	
 	la $t5, jumpingTo 	# push the address of return to stack
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
-	
 	addi $sp, $sp, -4 	# push the value of color into stack
 	sw $t9, ($sp)
-	
 	la $t5, canvas 		# push the address of canvas into stack
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
-	
 	li $t5, 3
 	addi $s4, $s4, -1
 	mul $t5, $t5, $s4 	# The y coordinate of the rectangle
 	addi $sp, $sp, -4
 	sw $t5, ($sp)
-	
 	addi $sp, $sp, -4
 	sw $zero, ($sp)		# y coordinate of the rectangle
-	
 	li $t5, 2 
-	addi $sp, $sp, -4 	# push width into stack
+	addi $sp, $sp, -4 	# push width to stack
 	sw $t5, ($sp)
-	
-	addi $sp, $sp, -4	# push height into stack
+	addi $sp, $sp, -4	# push height to stack
 	sw $t5, ($sp)
 	j graphRectangleByStack
 	
@@ -813,11 +804,11 @@ endGraphObjs:
 	
 	
 graph:	
-	lw $t0, 0($t8) # Coordinates
+	lw $t0, 0($t8) 		# t0 store coordin
 	lw $t1, 4($t8)
 	
-	lw $t2, 0($a0) # Width
-	lw $t3, 4($a0) # Height
+	lw $t2, 0($a0) 		# a0 is weight
+	lw $t3, 4($a0) 		# a0 + 4 is height
 	
 	la $s3, graphObj
 	j graphRectangle
@@ -828,43 +819,43 @@ graphObj:
 	
 graphRectangle: 
 # t0 -> xCoor, t1 yCoor, t2 -> width, t3 -> height, t9-> color, s1 for canvas
-# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
+# x and y goes to 32,  use s3 to jimp back to the previous iteration
 		
-	li $t4, 128 # Transfer the location of y into relative addres values/diatance from the starting position
+	li $t4, 128 		
 	mul $t1, $t1, $t4
-	addi $v1, $t1, 0 # index for looping
+	addi $v1, $t1, 0 	# index for looping
 	
-	li $t4, 4 # Transfer the location of x into relative addres values/diatance from the starting position
+	li $t4, 4 		
 	mul $t0, $t0, $t4
-	addi $v0, $t0, 0 # index for looping
+	addi $v0, $t0, 0 	# index for looping
 	
-	add $t6, $t0, $t1 # Store the value of distance from initial point to current point, already by 4
+	add $t6, $t0, $t1 	# Store the value of distance from initial point to current point, already by 4
 	
-	add $t7, $t0, $t1 # Same as above, used as cursor for looping, change horizontally
+	add $t7, $t0, $t1 	# Same as above, used as cursor for looping, change horizontally
 	
 	
-	li $t4, 0 # Will be used as loop variant for outer loop
-	li $t5, 0 # Will be used as loop variant for inner loop
+	li $t4, 0		# Will be used as loop variant for outer loop
+	li $t5, 0 		# Will be used as loop variant for inner loop
 	
-recOuter:
-	beq $t4, $t3, recOuterEnd # The outer loop for the y 
+outerLoop:
+	beq $t4, $t3, outerLoopEnd # The outer loop for the y 
 	li $t5, 0
 	
-	recInner:
-	beq $t5, $t2, recInnerEnd # The inner loop for the x
+	innerLoop:
+	beq $t5, $t2, innerLoopEnd # The inner loop for the x
 	
 	add $a3, $t7, $s1
-	sw $t9, 0($a3) # paint the color
+	sw $t9, 0($a3) 		# color
 	
-	addi $t5, $t5, 1 # Accumulate
+	addi $t5, $t5, 1 	# t5=t5+1
 	
 	
 	
-	la $s5, recCurrent0
-	addi $s7, $t7, 0 # Set s7 to the t7, passing the parameter to the helper function
-	j addressToCoordinate # Calculate the location
+	la $s5, loopX
+	addi $s7, $t7, 0 	# Set s7 to the t7
+	j addressToCoordinate 	# Calculate the location
 	
-	recCurrent0:
+loopX:
 	add $a1, $k1, $zero # Store the y location to a1, later to compare with a2
 	
 	addi $t7, $t7, 4 # Add t7 by 4, move the cursor right by one pixel
@@ -874,27 +865,26 @@ recOuter:
 	j addressToCoordinate # Calculate the location
 	
 	recCurrent1:
-	add $a2, $k1, $zero # Store the later y location as a2
+	add $a2, $k1, $zero 		# Store the later y location as a2
 	
-	bgt $a2, $a1, verticalMoveBack # If a2 is greater than a1, than move the vertical cursor up by one pixel
-	j recNothing
+	bgt $a2, $a1, moveOneLower 	# If a2 is greater than a1, than move the vertical cursor up by one pixel
+	j loopEnds
 	
-	verticalMoveBack:
+moveOneLower:
 	li $a1, 128
 	sub $t7, $t7, $a1
 	
 	
-	recNothing: 
+loopEnds: 
+	j innerLoop
 	
-	j recInner
-	
-	recInnerEnd:
+	innerLoopEnd:
 	addi $t4, $t4, 1 # Accumulate
 	addi $t6, $t6, 128 # Add 128 to t6 so that the cursor move one pixel down
 	addi $t7, $t6, 0 # reset the t7 to t6 so that its horizontal position is back on zero
-	j recOuter
+	j outerLoop
 	
-	recOuterEnd:
+	outerLoopEnd:
 	jr $s3
 	
 addressToCoordinate: # Take s7 as the address and store x to k0, y to k1, use s5 to jump back
@@ -1062,8 +1052,9 @@ endGraphFrog:
 	
 graphRectangleByStack: 
 # Stack: returnAddress, colorValue, Canvas, xCoor, yCoor, Width, Height
-# t0 to store the x and t1 to store the y, t2 to store the width and t3 to store the height and t9 for color, s1 for canvas
-# x and y goes from 0 to 32, corresponding to the pixels, use s3 to jump back
+# t0 -> xCoor, t1 yCoor, t2 -> width, t3 -> height, t9-> color, s1 for canvas
+# x and y goes to 32,  use s3 to jimp back to the previous iteration
+
 	lw $t3, 0($sp) # t3 for height
 	addi $sp, $sp, 4
 	lw $t2, ($sp) # t2 for width
@@ -1082,7 +1073,6 @@ graphRectangleByStack:
 	lw $s3, ($sp) # s3 for jump back address
 	addi $sp, $sp, 4
 	
-		
 	li $t4, 128 # Transfer the location of y into relative addres values/diatance from the starting position
 	mul $t1, $t1, $t4
 	addi $v1, $t1, 0 # index for looping
@@ -1092,19 +1082,17 @@ graphRectangleByStack:
 	addi $v0, $t0, 0 # index for looping
 	
 	add $t6, $t0, $t1 # Store the value of distance from initial point to current point, already by 4
-	
 	add $t7, $t0, $t1 # Same as above, used as cursor for looping, change horizontally
-	
 	
 	li $t4, 0 # Will be used as loop variant for outer loop
 	li $t5, 0 # Will be used as loop variant for inner loop
 	
-	recOuter1:
-	beq $t4, $t3, recOuterEnd1 # The outer loop for the y 
+	outerLoop1:
+	beq $t4, $t3, outerLoopEnd1 # The outer loop for the y 
 	li $t5, 0
 	
-	recInner1:
-	beq $t5, $t2, recInnerEnd1 # The inner loop for the x
+	innerLoop1:
+	beq $t5, $t2, innerLoopEnd1 # The inner loop for the x
 	
 	add $a3, $t7, $s1
 	sw $t9, 0($a3) # paint the color
@@ -1113,41 +1101,40 @@ graphRectangleByStack:
 	
 	
 	
-	la $s5, recCurrent01
+	la $s5, loopA
 	addi $s7, $t7, 0 # Set s7 to the t7, passing the parameter to the helper function
 	j addressToCoordinate # Calculate the location
 	
-	recCurrent01:
+loopA:
 	add $a1, $k1, $zero # Store the y location to a1, later to compare with a2
 	
 	addi $t7, $t7, 4 # Add t7 by 4, move the cursor right by one pixel
 	
-	la $s5, recCurrent11
+	la $s5, loopB
 	addi $s7, $t7, 0 # Set s7 to the t7, passing the parameter to the helper function
 	j addressToCoordinate # Calculate the location
 	
-	recCurrent11:
+loopB:
 	add $a2, $k1, $zero # Store the later y location as a2
 	
-	bgt $a2, $a1, verticalMoveBack1 # If a2 is greater than a1, than move the vertical cursor up by one pixel
-	j recNothing1
+	bgt $a2, $a1, moveOneLower1 # If a2 is greater than a1, than move the vertical cursor up by one pixel
+	j loopEnds1
 	
-	verticalMoveBack1:
+	moveOneLower1:
 	li $a1, 128
 	sub $t7, $t7, $a1
 	
 	
-	recNothing1: 
+loopEnds1: 
+	j innerLoop1
 	
-	j recInner1
-	
-	recInnerEnd1:
+innerLoopEnd1:
 	addi $t4, $t4, 1 # Accumulate
 	addi $t6, $t6, 128 # Add 128 to t6 so that the cursor move one pixel down
 	addi $t7, $t6, 0 # reset the t7 to t6 so that its horizontal position is back on zero
-	j recOuter1
+	j outerLoop1
 	
-	recOuterEnd1:
+outerLoopEnd1:
 	jr $s3
 	
 increaseSpeed:
@@ -1211,19 +1198,19 @@ resetGameParam:
 	li $t2, 8
 	sw $t2, 0($t1)
 	
-	la $t1, upperRowWoodSpeed 	# reset the wood speed
+	la $t1, upperRowWoodSpeed 	# reset upper wood speed
 	li $t2, 2
 	sw $t2, 0($t1)
 		
-	la $t1, lowerRowWoodSpeed 	# reset the wood speed
+	la $t1, lowerRowWoodSpeed 	# reset lower wood speed
 	li $t2, -1
 	sw $t2, 0($t1)
 	
-	la $t1, upperRowCarSpeed	# reset the car speed
+	la $t1, upperRowCarSpeed	# reset upper car speed
 	li $t2, 1
 	sw $t2, 0($t1)
 	
-	la $t1, lowerRowCarSpeed	# reset the car speed
+	la $t1, lowerRowCarSpeed	# reset lower car speed
 	li $t2, -2
 	sw $t2, 0($t1)
 	
@@ -1233,17 +1220,17 @@ nextLevelCheck:
 	lw $t1, gameScore
 	li $t2, 2
 	blt $t1, $t2, noNextLevel	# if current level < 2
+	
 	# Go to next gameLevel
 	la $t1, woodSize
 	li $t2, 4
 	sw $t2, ($t1)
 	
-	# 7f00ff as color for health indicator
 	la $t1, lifeColor
-	li $t2, 0x7f00ff
+	lw $t2, nextLevelYellow
 	sw $t2, ($t1)
 	
-	noNextLevel:
+noNextLevel:
 	jr $ra
 	
 sinkWood:
@@ -1258,7 +1245,7 @@ sinkWood:
 	sw $t1, ($t4)
 	bge $t1, $t3, changeSinkStatus
 	j endOfChanging
-	# Action when still floating
+	
 	
 changeSinkStatus:
 	la $t1, sinkCount
