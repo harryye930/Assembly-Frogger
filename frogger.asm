@@ -423,6 +423,7 @@ finishDetect:
 	 	
 hitFrog: 
 # stack: return address, corrdinate, object address
+
 	lw $t2, 0($sp) 		# use t2 to store the address of object size
 	addi $sp, $sp, 4
 	lw $t2, 0($t2) 		# t2 to store the width of the object
